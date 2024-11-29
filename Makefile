@@ -28,4 +28,4 @@ clean:
 
 # Run the program
 run: $(TARGET)
-	./$(TARGET)
+	./$(TARGET) -f Benchmarks/s27.bench

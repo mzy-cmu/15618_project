@@ -5,6 +5,7 @@
 #include <string>
 #include <queue>
 #include <algorithm>
+#include <unistd.h>
 #include "CircuitDAG.h"
 
 void parseInputOutput(const string &line, CircuitDAG &DAG, bool isInput) {
@@ -118,8 +119,26 @@ vector<int> topologicalSort(CircuitDAG &DAG) {
     return topo_order;
 }
 
-int main() {
-    const string filename = "Benchmarks/s27.bench";
+int main(int argc, char *argv[]) {
+    // Read command line arguments
+    int opt;
+    string filename;
+    while ((opt = getopt(argc, argv, "f:")) != -1) {
+        switch (opt) {
+        case 'f':
+            filename = string(optarg);
+            break;
+        default:
+            std::cerr << "Usage: " << argv[0] << " -f [input_filename]\n";
+        }
+    }
+
+    // Check if filename was set
+    if (filename.empty()) {
+        std::cerr << "Error: -f [input_filename] is required.\n";
+        std::cerr << "Usage: " << argv[0] << " -f [input_filename]\n";
+        return 1;
+    }
 
     try {
         CircuitDAG DAG = parseISCAS89(filename);
