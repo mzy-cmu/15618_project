@@ -43,51 +43,76 @@ int main(int argc, char *argv[]) {
 
     // Parse and init
     try {
-        parseISCAS89(filename, outputs, signals, signal_map, gates, dependent_signals, dependency_degree);
-        check_todo.resize(signals.size(), false);
+        parseISCAS89(filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree);
     } catch (const runtime_error &e) {
         cerr << e.what() << endl;
         return 1;
     }
 
-    // for testcase
-    //     evaluate good circuit outputs
-    //     for signal_id_list
-    //         while()
-    //             evaluateGate(list.pop, signal_id)
-
-    // cuda
-    // block: x testcase y fault
-    // thread: wire
-
-    // Batch process
     size_t num_signals = signals.size();
-    size_t num_signals_accum = 0;
-    int batch_id = 0;
-    while (num_signals_accum < num_signals) {
-        vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree);
-        size_t size = signals_todo.size();
-        num_signals_accum += size;
-        
-        // Inputs
-        if (batch_id == 0) {
-            // TODO: Init values input to testcase
-        } 
-        // Evaluate gates
-        else {
-            cout << "Batch " << batch_id << ", "<< size << " wires: ";
-            for (size_t i = 0; i < size; i++) {
-                cout << signals_todo[i] << "(" << signals[signals_todo[i]] << ") ";
+
+    // For each testcase
+    size_t num_inputs = inputs.size();
+    size_t num_testcase = 1 << inputs.size();
+    for (size_t test_id = 0; test_id < num_testcase; test_id++) {
+        // Set testcase
+        values.assign(signals.size(), false);
+
+        cout << "\n*********Testcase " << test_id << ": ";
+        for (size_t input_i = 0; input_i < num_inputs; input_i++) {
+            values[inputs[input_i]] = bool((test_id >> input_i) & 1);
+            cout << inputs[input_i] << "(" << signals[inputs[input_i]] << "):" << values[inputs[input_i]] << " ";
+        }
+        cout << "*********\n";
+
+        // Evaluate good circuit
+        check_todo.assign(signals.size(), false);
+        vector<int> dependency_degree_work = dependency_degree;
+        size_t num_signals_accum = 0;
+        int batch_id = 0;
+        while (num_signals_accum < num_signals) {
+            vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree_work);
+            size_t size = signals_todo.size();
+            num_signals_accum += size;
+            
+            // Evaluate gates in batch
+            if (batch_id) {
+                cout << "Batch " << batch_id << ", "<< size << " wires: ";
+                for (size_t i = 0; i < size; i++) {
+                    cout << signals_todo[i] << "(" << signals[signals_todo[i]] << ") ";
+                }
+                cout << "\n";
+
+                // evaluateGates(values, gates, signals_todo, num_signals);
             }
-            cout << "\n";
+            batch_id++;
         }
 
-        batch_id++;
-    }
+        if (num_signals_accum != num_signals) {
+            cerr << "Error: Proccessed signal count doesn't match\n";
+            return 1;
+        }
 
-    if (num_signals_accum != num_signals) {
-        cerr << "Error: Proccessed signal count doesn't match\n";
-        return 1;
+        // For each fault
+        for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
+            // Evaluate faulty circuit, same as above
+            cout << "Fault: "<< fault_id << "(" << signals[fault_id] << ")\n";
+
+            check_todo.assign(check_todo.size(), false);
+            dependency_degree_work = dependency_degree;
+            num_signals_accum = 0;
+            batch_id = 0;
+            while (num_signals_accum < num_signals) {
+                vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree_work);
+                size_t size = signals_todo.size();
+                num_signals_accum += size;
+
+                if (batch_id) {
+                    // evaluateGates(values, gates, signals_todo, fault_id);
+                }
+                batch_id++;
+            }
+        }
     }
 
     return 0;

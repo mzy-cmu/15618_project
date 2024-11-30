@@ -56,6 +56,7 @@ void parseGate(const string line,
 
 void parseInputOutput(const string line,
                       const bool isOutput,
+                      vector<int> &inputs,
                       vector<int> &outputs,
                       vector<string> &signals,
                       unordered_map<string, int> &signal_map,
@@ -68,6 +69,7 @@ void parseInputOutput(const string line,
 
     int id = addSignal(name, signals, signal_map);
     if (!isOutput) {
+        inputs.push_back(id);
         Gate gate = {"INPUT", {}};
         gates.push_back(gate);
         dependency_degree.push_back(0);
@@ -78,6 +80,7 @@ void parseInputOutput(const string line,
 
 // Parse ISCAS89 and create circuit data structure
 void parseISCAS89(const string filename,
+                  vector<int> &inputs,
                   vector<int> &outputs,
                   vector<string> &signals,
                   unordered_map<string, int> &signal_map,
@@ -95,9 +98,9 @@ void parseISCAS89(const string filename,
             continue;
         // Parse IO
         if (line.find("INPUT") == 0) {
-            parseInputOutput(line, false, outputs, signals, signal_map, gates, dependency_degree);
+            parseInputOutput(line, false, inputs, outputs, signals, signal_map, gates, dependency_degree);
         } else if (line.find("OUTPUT") == 0) {
-            parseInputOutput(line, true, outputs, signals, signal_map, gates, dependency_degree);
+            parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree);
         // Parse gates
         } else if (line.find("=") != string::npos) {
             parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree);
