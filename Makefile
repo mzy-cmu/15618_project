@@ -6,7 +6,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -O2
 TARGET = ParaFaultSim
 
 # Source files
-SRCS = ParaFaultSim.cpp CircuitDAG.cpp
+SRCS = ParaFaultSim.cpp Circuit.cpp
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)

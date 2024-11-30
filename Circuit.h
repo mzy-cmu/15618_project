@@ -1,8 +1,13 @@
-#ifndef CIRCUIT_DAG_H
-#define CIRCUIT_DAG_H
+#ifndef CIRCUIT_H
+#define CIRCUIT_H
 
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <unordered_map>
 #include <vector>
 #include <string>
+
 using namespace std;
 
 struct Gate {
@@ -10,13 +15,31 @@ struct Gate {
     vector<int> inputs;         // Input signal id
 };
 
-vector<int> outputs;                       // Output signal id
-vector<string> signals;                    // Signal id -> name
-vector<Gate> gates;                        // Signal id -> gate type (incl INPUT), inputs
-vector<int> dependency_degree;             // Signal id -> In-degree of each signal
-vector<vector<bool>> value;                // Signal id -> [parallel test case values]
-
-int addSignal(const string &name);
-void addGate(const Gate &gate);
+int addSignal(const string name,
+              vector<string> &signals,
+              unordered_map<string, int> &signal_map);
+void parseGate(const string line,
+               vector<string> &signals,
+               unordered_map<string, int> &signal_map,
+               vector<Gate> &gates,
+               vector<vector<int>> &dependent_signals,
+               vector<int> &dependency_degree);
+void parseInputOutput(const string line,
+                      const bool isOutput,
+                      vector<int> &outputs,
+                      vector<string> &signals,
+                      unordered_map<string, int> &signal_map,
+                      vector<Gate> &gates,
+                      vector<int> &dependency_degree);
+void parseISCAS89(const string filename,
+                  vector<int> &outputs,
+                  vector<string> &signals,
+                  unordered_map<string, int> &signal_map,
+                  vector<Gate> &gates,
+                  vector<vector<int>> &dependent_signals,
+                  vector<int> &dependency_degree);
+vector<int> popSignals(vector<bool> &check_todo,
+                       vector<vector<int>> &dependent_signals,
+                       vector<int> &dependency_degree);
 
 #endif

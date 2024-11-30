@@ -1,145 +1,134 @@
 #include "Circuit.h"
 
-Signal::Signal(string name, int id) : name(name), id(id) {}
-
-Gate::Gate(string type, int output, vector<int> inputs) : type(type), output(output), inputs(inputs) {}
-
-CircuitDAG::CircuitDAG() {}
-
-// Add a signal to the circuit
-int CircuitDAG::addSignal(const string &name) {
+// Add a signal to the circuit, return id
+int addSignal(const string name,
+              vector<string> &signals,
+              unordered_map<string, int> &signal_map) {
+    // Avoid redundent add
     if (signal_map.find(name) != signal_map.end()) {
         return signal_map[name];
     }
     int id = signals.size();
-    signals.emplace_back(name, id);
+    signals.push_back(name);
     signal_map[name] = id;
     return id;
 }
 
-// Add a gate to the circuit
-void CircuitDAG::addGate(const Gate &gate) {
-    gates.push_back(gate);
-    // Adjust size
-    adj_list.resize(signals.size());
-    in_degree.resize(signals.size(), 0);
-
-    // Add edges from input signals to the gate's output
-    for (size_t i = 0; i < gate.inputs.size(); i++) {
-        int input = gate.inputs[i];
-        adj_list[input].push_back(gate.output);
-        in_degree[gate.output]++;
-    }
-}
-
-
-void parseInputOutput(const string &line, CircuitDAG &DAG, bool isInput) {
-    string token;
-    stringstream ss(line);
-    getline(ss, token, '('); // Skip "INPUT" or "OUTPUT"
-
-    while (getline(ss, token, ',')) {
-        // Remove ) and space
-        token.erase(std::remove(token.begin(), token.end(), ')'), token.end());
-        token.erase(std::remove(token.begin(), token.end(), ' '), token.end());
-        int id = DAG.addSignal(token);
-        if (isInput) {
-            DAG.inputs.push_back(id);
-        } else {
-            DAG.outputs.push_back(id);
-        }
-    }
-}
-
-void parseGate(const string &line, CircuitDAG &DAG) {
-    string output, type, inputList;
+void parseGate(const string line,
+               vector<string> &signals,
+               unordered_map<string, int> &signal_map,
+               vector<Gate> &gates,
+               vector<vector<int>> &dependent_signals,
+               vector<int> &dependency_degree) {
+    string output, type, input_list;
     stringstream ss(line);
 
     // Output signal
     getline(ss, output, '=');
     output.erase(std::remove(output.begin(), output.end(), ' '), output.end());
-    int outputID = DAG.addSignal(output);
+    int output_id = addSignal(output, signals, signal_map);
 
     // Gate type and inputs
     getline(ss, type, '(');
     type.erase(std::remove(type.begin(), type.end(), ' '), type.end());
-    getline(ss, inputList, ')');
+    getline(ss, input_list, ')');
 
     // Input signals
-    vector<int> inputIDs;
-    stringstream inputStream(inputList);
+    vector<int> input_ids;
+    stringstream inputStream(input_list);
     string input;
     while (getline(inputStream, input, ',')) {
         input.erase(std::remove(input.begin(), input.end(), ' '), input.end());
-        inputIDs.push_back(DAG.addSignal(input));
+        input_ids.push_back(addSignal(input, signals, signal_map));
     }
 
-    // Add the gate to the DAG
-    Gate gate(type, outputID, inputIDs);
-    DAG.addGate(gate);
+    // Update gates, dependent_signals, dependency_degree
+    gates.resize(signals.size());
+    Gate gate = {type, input_ids};
+    gates.push_back(gate);
+
+    dependency_degree.resize(signals.size(), 0);
+    dependency_degree[output_id] = input_ids.size();
+    dependent_signals.resize(signals.size());
+    for (size_t i = 0; i < input_ids.size(); i++)
+        dependent_signals[input_ids[i]].push_back(output_id);
+}
+
+void parseInputOutput(const string line,
+                      const bool isOutput,
+                      vector<int> &outputs,
+                      vector<string> &signals,
+                      unordered_map<string, int> &signal_map,
+                      vector<Gate> &gates,
+                      vector<int> &dependency_degree) {
+    string name;
+    stringstream ss(line);
+    getline(ss, name, '('); // Skip "INPUT" "OUTPUT"
+    getline(ss, name, ')');
+
+    int id = addSignal(name, signals, signal_map);
+    if (!isOutput) {
+        Gate gate = {"INPUT", {}};
+        gates.push_back(gate);
+        dependency_degree.push_back(0);
+    }
+    else
+        outputs.push_back(id);
 }
 
 // Parse ISCAS89 and create circuit data structure
-CircuitDAG parseISCAS89(const string &filename) {
+void parseISCAS89(const string filename,
+                  vector<int> &outputs,
+                  vector<string> &signals,
+                  unordered_map<string, int> &signal_map,
+                  vector<Gate> &gates,
+                  vector<vector<int>> &dependent_signals,
+                  vector<int> &dependency_degree) {
     ifstream file(filename);
     if (!file.is_open()) {
         throw runtime_error("Error: Could not open file " + filename);
     }
 
-    CircuitDAG DAG;
     string line;
-
     while (getline(file, line)) {
         if (line.empty())
             continue;
         // Parse IO
         if (line.find("INPUT") == 0) {
-            parseInputOutput(line, DAG, true);
+            parseInputOutput(line, false, outputs, signals, signal_map, gates, dependency_degree);
         } else if (line.find("OUTPUT") == 0) {
-            parseInputOutput(line, DAG, false);
+            parseInputOutput(line, true, outputs, signals, signal_map, gates, dependency_degree);
         // Parse gates
         } else if (line.find("=") != string::npos) {
-            parseGate(line, DAG);
+            parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree);
         }
     }
 
     file.close();
-    return DAG;
+    return;
 }
 
-// Identify ready signals to be processed next round and resolve dependency
-vector<int> topologicalSort(CircuitDAG &DAG) {
-    vector<int> topo_order;
-    queue<int> q;
+// Identify ready signals in this batch, resolve dependency
+vector<int> popSignals(vector<bool> &check_todo,
+                       vector<vector<int>> &dependent_signals,
+                       vector<int> &dependency_degree) {
+    vector<int> signals_todo;
 
-    // Enqueue all signals with in-degree 0
-    for (size_t i = 0; i < DAG.in_degree.size(); i++) {
-        if (DAG.in_degree[i] == 0) {
-            q.push(i);
+    // Enqueue all signals with in-degree 0 that are not proccessed
+    for (size_t signalIn = 0; signalIn < dependency_degree.size(); signalIn++) {
+        if (!check_todo[signalIn] && dependency_degree[signalIn] == 0) {
+            signals_todo.push_back(signalIn);
+            check_todo[signalIn] = true;
         }
     }
 
-    // Process all signals
-    while (!q.empty()) {
-        int signalIn = q.front();
-        q.pop();
-        topo_order.push_back(signalIn);
-
-        // Decrease in_degree of dependent signals
-        for (size_t i = 0; i < DAG.adj_list[signalIn].size(); i++) {
-            int signalOut = DAG.adj_list[signalIn][i];
-            DAG.in_degree[signalOut]--;
-            // Refill queue
-            if (DAG.in_degree[signalOut] == 0) {
-                q.push(signalOut);
-            }
+    // Decrease in_degree of dependent signals
+    for (size_t j = 0; j < signals_todo.size(); j++) {
+        for (size_t i = 0; i < dependent_signals[signals_todo[j]].size(); i++) {
+            int signalOut = dependent_signals[signals_todo[j]][i];
+            dependency_degree[signalOut]--;
         }
     }
 
-    // Check for cycles
-    if (topo_order.size() != DAG.signals.size()) {
-        throw runtime_error("Error: The circuit contains a cycle!");
-    }
-
-    return topo_order;
+    return signals_todo;
 }
