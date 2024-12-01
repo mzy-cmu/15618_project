@@ -1,36 +1,78 @@
-// evaluate
-// vector signal id
-// vector bool 2D: 1D: signal id, 2D: testcase value
-// Gate -> type, 
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unistd.h>
+#include "Circuit.h"
 
-// 1: 2 3 2: 3 3:
-// 1:     2: 1 3: 1 2
-// 1: 0 2: 1 3: 2
-
-// good circuit evaluate -> fault insertion for all signals then evaluate -> change testcase
-
-for testcase
-    for signal_id_list
-        evaluateGate(signal_id)
-
-vector<int> evaluateGates(vector<Gate> gates, vector<int> process_ids, int fault_id) {
-    for(int i = 0; i < process_ids.size(); i++) {
-        int gate_id = process_ids[i];
-        bool gate_value = evaluateGate(gates[gate_id]);
-        if (gate_id == fault_id) {
-            value[gate_id] = !gate_value;
-        } else {
-            value[gate_id] = gate_value;
+bool evaluateGate(vector<bool>& values, Gate gate) {
+    if (gate.type == "BUFF") {
+        if (gate.inputs.size() != 1) {
+            cerr << "Error: BUFF gate input size not 1\n";
+            return 1;
         }
+        return values[gate.inputs[0]];
+    } else if (gate.type == "NOT") {
+        if (gate.inputs.size() != 1) {
+            cerr << "Error: NOT gate input size not 1\n";
+            return 1;
+        }
+        cout << "***" << values[gate.inputs[0]] << "\n";
+        return !values[gate.inputs[0]];
+    } else if (gate.type == "AND") {
+        for (size_t i = 0; i < gate.inputs.size(); i++) {
+            if (!values[gate.inputs[i]]) {
+                return false;
+            }
+        }
+        return true;
+    } else if (gate.type == "NAND") {
+        for (size_t i = 0; i < gate.inputs.size(); i++) {
+            if (!values[gate.inputs[i]]) {
+                return true;
+            }
+        }
+        return false;
+    } else if (gate.type == "OR") {
+        for (size_t i = 0; i < gate.inputs.size(); i++) {
+            if (values[gate.inputs[i]]) {
+                return true;
+            }
+        }
+        return false;
+    } else if (gate.type == "NOR") {
+        for (size_t i = 0; i < gate.inputs.size(); i++) {
+            if (values[gate.inputs[i]]) {
+                return false;
+            }
+        }
+        return true;
+    } else if (gate.type == "XOR") {
+        bool parity_flag = values[gate.inputs[0]];
+        for (size_t i = 1; i < gate.inputs.size(); i++) {
+            parity_flag = parity_flag ^ values[gate.inputs[0]];
+        }
+        return parity_flag;
+    } else if (gate.type == "XNOR") {
+        bool parity_flag = values[gate.inputs[0]];
+        for (size_t i = 1; i < gate.inputs.size(); i++) {
+            parity_flag = parity_flag ^ values[gate.inputs[0]];
+        }
+        return !parity_flag;
+    } else {
+        cerr << "Error: Invalid gate type " << gate.type << "\n";
+        return 1;
     }
-
 }
 
-vector<int> evaluateGate(Gate gate) {
-    switch(gate.type) {
-        case "AND": 
-            for (int i = 0; i < gate.inputs.size(); i++) {
-                if ()
-            }
+void evaluateGates(vector<bool>& values, vector<Gate> gates, vector<int> signals_todo, int fault_id) {
+    for (size_t i = 0; i < signals_todo.size(); i++) {
+        int gate_id = signals_todo[i];
+        bool gate_value = evaluateGate(values, gates[gate_id]);
+        cout << "id: " << gate_id << " type: " << gates[gate_id].type << " value: " << gate_value << "\n";
+        if (gate_id == fault_id) {
+            values[gate_id] = !gate_value;
+        } else {
+            values[gate_id] = gate_value;
+        }
     }
 }

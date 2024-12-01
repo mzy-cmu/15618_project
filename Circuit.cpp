@@ -1,4 +1,5 @@
 #include "Circuit.h"
+#include <iostream>
 
 // Add a signal to the circuit, return id
 int addSignal(const string name,
@@ -43,7 +44,6 @@ void parseGate(const string line,
     }
 
     // Update gates, dependent_signals, dependency_degree
-    gates.resize(signals.size());
     Gate gate = {type, input_ids};
     gates.push_back(gate);
 
