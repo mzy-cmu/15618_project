@@ -50,15 +50,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (size_t i = 0; i < gates.size(); i++) {
-        cout << gates[i].type << " ";
-    }
-    cout << "\n";
-    for (size_t i = 0; i < signals.size(); i++) {
-        cout << signals[i] << " ";
-    }
-    cout << "\n";
-
     size_t num_signals = signals.size();
 
     // For each testcase
@@ -104,39 +95,46 @@ int main(int argc, char *argv[]) {
         }
 
         cout << "Output: ";
-        for (size_t i = 0; i < signals.size(); i++) {
-            // output_values.push_back(values[outputs[i]]);
-            // cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
-            cout << i << "(" << signals[i] << "):" << values[i] << " ";
+        for (size_t i = 0; i < outputs.size(); i++) {
+            output_values.push_back(values[outputs[i]]);
+            cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
         }
         cout << "\n";
 
         // For each fault
-        // for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
-        //     // Evaluate faulty circuit, same as above
-        //     cout << "Fault: "<< fault_id << "(" << signals[fault_id] << ")\n";
+        for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
+            // Evaluate faulty circuit, same as above
+            cout << "Fault: "<< fault_id << "(" << signals[fault_id] << ")\n";
 
-        //     check_todo.assign(check_todo.size(), false);
-        //     dependency_degree_work = dependency_degree;
-        //     num_signals_accum = 0;
-        //     batch_id = 0;
-        //     while (num_signals_accum < num_signals) {
-        //         vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree_work);
-        //         size_t size = signals_todo.size();
-        //         num_signals_accum += size;
+            check_todo.assign(check_todo.size(), false);
+            dependency_degree_work = dependency_degree;
+            num_signals_accum = 0;
+            batch_id = 0;
+            while (num_signals_accum < num_signals) {
+                vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree_work);
+                size_t size = signals_todo.size();
+                num_signals_accum += size;
 
-        //         if (batch_id) {
-        //             evaluateGates(values, gates, signals_todo, fault_id);
-        //         }
-        //         batch_id++;
-        //     }
+                if (batch_id) {
+                    evaluateGates(values, gates, signals_todo, fault_id);
+                }
+                batch_id++;
+            }
 
-        //     cout << "Output: ";
-        //     for (size_t i = 0; i < outputs.size(); i++) {
-        //         cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
-        //     }
-        //     cout << "\n";
-        // }
+            bool diff = false;
+            cout << "Output: ";
+            for (size_t i = 0; i < signals.size(); i++) {
+                // cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
+                // if (values[outputs[i]] != output_values[i]) {
+                //     diff = true;
+                // }
+                cout << i << "(" << signals[i] << "):" << values[i] << " ";
+            }
+            if (diff) {
+                cout << " *";
+            }
+            cout << "\n";
+        }
     }
 
     return 0;

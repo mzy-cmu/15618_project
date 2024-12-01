@@ -16,7 +16,6 @@ bool evaluateGate(vector<bool>& values, Gate gate) {
             cerr << "Error: NOT gate input size not 1\n";
             return 1;
         }
-        cout << "***" << values[gate.inputs[0]] << "\n";
         return !values[gate.inputs[0]];
     } else if (gate.type == "AND") {
         for (size_t i = 0; i < gate.inputs.size(); i++) {
@@ -68,7 +67,6 @@ void evaluateGates(vector<bool>& values, vector<Gate> gates, vector<int> signals
     for (size_t i = 0; i < signals_todo.size(); i++) {
         int gate_id = signals_todo[i];
         bool gate_value = evaluateGate(values, gates[gate_id]);
-        cout << "id: " << gate_id << " type: " << gates[gate_id].type << " value: " << gate_value << "\n";
         if (gate_id == fault_id) {
             values[gate_id] = !gate_value;
         } else {
