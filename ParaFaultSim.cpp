@@ -106,6 +106,10 @@ int main(int argc, char *argv[]) {
             // Evaluate faulty circuit, same as above
             cout << "Fault: "<< fault_id << "(" << signals[fault_id] << ")\n";
 
+            // Implement input fault
+            if (fault_id < inputs.size())
+                values[fault_id] = !values[fault_id];
+
             check_todo.assign(check_todo.size(), false);
             dependency_degree_work = dependency_degree;
             num_signals_accum = 0;
@@ -120,6 +124,10 @@ int main(int argc, char *argv[]) {
                 }
                 batch_id++;
             }
+
+            // Revert input fault
+            if (fault_id < inputs.size())
+                values[fault_id] = !values[fault_id];
 
             bool diff = false;
             cout << "Output: ";
