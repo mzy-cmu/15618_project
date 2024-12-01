@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     // For each testcase
     size_t num_inputs = inputs.size();
     size_t num_testcase = 1 << inputs.size();
-    for (size_t test_id = 0; test_id < 1; test_id++) {
+    for (size_t test_id = 0; test_id < num_testcase; test_id++) {
         // Set testcase
         values.assign(signals.size(), false);
 
@@ -125,23 +125,22 @@ int main(int argc, char *argv[]) {
                 batch_id++;
             }
 
-            // Revert input fault
-            if (fault_id < inputs.size())
-                values[fault_id] = !values[fault_id];
-
             bool diff = false;
             cout << "Output: ";
-            for (size_t i = 0; i < signals.size(); i++) {
-                // cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
-                // if (values[outputs[i]] != output_values[i]) {
-                //     diff = true;
-                // }
-                cout << i << "(" << signals[i] << "):" << values[i] << " ";
+            for (size_t i = 0; i < outputs.size(); i++) {
+                cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
+                if (values[outputs[i]] != output_values[i]) {
+                    diff = true;
+                }
             }
             if (diff) {
                 cout << " *";
             }
             cout << "\n";
+
+            // Revert input fault
+            if (fault_id < inputs.size())
+                values[fault_id] = !values[fault_id];
         }
     }
 
