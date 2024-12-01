@@ -44,8 +44,9 @@ void parseGate(const string line,
     }
 
     // Update gates, dependent_signals, dependency_degree
+    gates.resize(signals.size());
     Gate gate = {type, input_ids};
-    gates.push_back(gate);
+    gates[output_id] = gate;
 
     dependency_degree.resize(signals.size(), 0);
     dependency_degree[output_id] = input_ids.size();
