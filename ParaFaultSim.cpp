@@ -59,12 +59,12 @@ int main(int argc, char *argv[]) {
         // Set testcase
         values.assign(signals.size(), false);
 
-        cout << "\n*********Testcase " << test_id << ": ";
+        cout << "test    " << (test_id + 1) << ": ";
         for (size_t input_i = 0; input_i < num_inputs; input_i++) {
             values[inputs[input_i]] = bool((test_id >> input_i) & 1);
-            cout << inputs[input_i] << "(" << signals[inputs[input_i]] << "):" << values[inputs[input_i]] << " ";
+            cout << values[inputs[input_i]];
         }
-        cout << "*********\n";
+        cout << " ";
 
         // Evaluate good circuit
         check_todo.assign(signals.size(), false);
@@ -78,11 +78,11 @@ int main(int argc, char *argv[]) {
             
             // Evaluate gates in batch
             if (batch_id) {
-                cout << "Batch " << batch_id << ", "<< size << " wires: ";
-                for (size_t i = 0; i < size; i++) {
-                    cout << signals_todo[i] << "(" << signals[signals_todo[i]] << ") ";
-                }
-                cout << "\n";
+                // cout << "Batch " << batch_id << ", "<< size << " wires: ";
+                // for (size_t i = 0; i < size; i++) {
+                //     cout << signals_todo[i] << "(" << signals[signals_todo[i]] << ") ";
+                // }
+                // cout << "\n";
 
                 evaluateGates(values, gates, signals_todo, num_signals);
             }
@@ -93,18 +93,17 @@ int main(int argc, char *argv[]) {
             cerr << "Error: Proccessed signal count doesn't match\n";
             return 1;
         }
-
-        cout << "Output: ";
+        
+        output_values.clear();
         for (size_t i = 0; i < outputs.size(); i++) {
             output_values.push_back(values[outputs[i]]);
-            cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
+            cout << values[outputs[i]];
         }
         cout << "\n";
 
         // For each fault
         for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
             // Evaluate faulty circuit, same as above
-            cout << "Fault: "<< fault_id << "(" << signals[fault_id] << ")\n";
 
             // Implement input fault
             if (fault_id < inputs.size())
@@ -125,16 +124,26 @@ int main(int argc, char *argv[]) {
                 batch_id++;
             }
 
+            // print faulty circuit output in HOPE format
+            cout << "  " << signals[fault_id] << " /" << values[fault_id] << ": ";
             bool diff = false;
-            cout << "Output: ";
             for (size_t i = 0; i < outputs.size(); i++) {
-                cout << outputs[i] << "(" << signals[outputs[i]] << "):" << values[outputs[i]] << " ";
                 if (values[outputs[i]] != output_values[i]) {
                     diff = true;
                 }
             }
             if (diff) {
-                cout << " *";
+                cout << "* ";
+            }
+            for (size_t i = 0; i < outputs.size(); i++) {
+                cout << values[outputs[i]];
+            }
+            cout << "\n";
+
+            // print correct circuit output in HOPE format
+            cout << "  " << signals[fault_id] << " /" << !values[fault_id] << ": ";
+            for (size_t i = 0; i < output_values.size(); i++) {
+                cout << output_values[i];
             }
             cout << "\n";
 

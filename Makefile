@@ -26,6 +26,7 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(OBJS) $(TARGET)
 
+bench_num = s208
 # Run the program
 run: $(TARGET)
-	./$(TARGET) -f Benchmarks/s27.bench
+	./$(TARGET) -f Benchmarks/$(bench_num).bench > Results/$(bench_num).result
