@@ -10,21 +10,29 @@ using namespace std;
 int main(int argc, char *argv[]) {
     // Read command line arguments
     int opt;
-    string filename;
-    while ((opt = getopt(argc, argv, "f:")) != -1) {
+    string circuit_filename, testcase_filename;
+    while ((opt = getopt(argc, argv, "f:t:")) != -1) {
         switch (opt) {
         case 'f':
-            filename = string(optarg);
+            circuit_filename = string(optarg);
+            break;
+        case 't':
+            testcase_filename = string(optarg);
             break;
         default:
-            std::cerr << "Usage: " << argv[0] << " -f [input_filename]\n";
+            cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename]\n";
         }
     }
 
-    // Check if filename was set
-    if (filename.empty()) {
-        cerr << "Error: -f [input_filename] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [input_filename]\n";
+    // Check if filenames were set
+    if (circuit_filename.empty()) {
+        cerr << "Error: -f [circuit_filename] is required.\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename]\n";
+        return 1;
+    }
+    if (testcase_filename.empty()) {
+        cerr << "Error: -t [testcase_filename] is required.\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename]\n";
         return 1;
     }
 
@@ -42,26 +50,28 @@ int main(int argc, char *argv[]) {
     vector<bool> output_values;                // Correct output values
     vector<vector<int>> testcase_faults;       // Testcase -> [stuck-at faults that can be detected, in signal id]
 
-    // Parse and init
+    // Parse circuit
     try {
-        parseISCAS89(filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree);
+        parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree);
     } catch (const runtime_error &e) {
         cerr << e.what() << endl;
         return 1;
     }
 
-    size_t num_signals = signals.size();
+    // Parse testcase
+    size_t num_inputs = inputs.size();
+    vector<vector<bool>> tests;
+    size_t num_testcase = static_cast<size_t>(parseTestcase(testcase_filename, tests, num_inputs));
 
     // For each testcase
-    size_t num_inputs = inputs.size();
-    size_t num_testcase = 1 << inputs.size();
+    size_t num_signals = signals.size();
     for (size_t test_id = 0; test_id < num_testcase; test_id++) {
         // Set testcase
         values.assign(signals.size(), false);
 
         cout << "test    " << (test_id + 1) << ": ";
         for (size_t input_i = 0; input_i < num_inputs; input_i++) {
-            values[inputs[input_i]] = bool((test_id >> input_i) & 1);
+            values[inputs[input_i]] = tests[test_id][input_i];
             cout << values[inputs[input_i]];
         }
         cout << " ";

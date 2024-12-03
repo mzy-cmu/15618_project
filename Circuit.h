@@ -40,6 +40,9 @@ void parseISCAS89(const string filename,
                   vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
                   vector<int> &dependency_degree);
+int parseTestcase(const string &testcase_filename,
+                  vector<vector<bool>> &tests,
+                  size_t num_inputs);
 vector<int> popSignals(vector<bool> &check_todo,
                        vector<vector<int>> &dependent_signals,
                        vector<int> &dependency_degree);

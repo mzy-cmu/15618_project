@@ -112,6 +112,71 @@ void parseISCAS89(const string filename,
     return;
 }
 
+// Parse test case
+int parseTestcase(const string &testcase_filename,
+                  vector<vector<bool>> &tests,
+                  size_t num_inputs) {
+    ifstream file(testcase_filename);
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << testcase_filename << endl;
+        return 0;
+    }
+
+    string line;
+    int test_id;
+    int num_testcase = 0;
+
+    while (getline(file, line)) {
+        // Find the colon to split the test_id and binary string
+        size_t colon_pos = line.find(':');
+        if (colon_pos == string::npos) {
+            cerr << "Invalid format in line: " << line << endl;
+            continue;
+        }
+
+        // Extract test_id and binary string
+        try {
+            test_id = stoi(line.substr(0, colon_pos));
+        } catch (const invalid_argument &) {
+            cerr << "Invalid test id in line: " << line << endl;
+            continue;
+        }
+
+        string binary_str = line.substr(colon_pos + 1);
+        binary_str.erase(0, binary_str.find_first_not_of(" \t")); // Trim leading spaces
+
+        // Validate the binary string length
+        if (binary_str.size() != num_inputs) {
+            cerr << "Error: Testcase " << test_id << " has wrong number of inputs" << endl;
+            return 0;
+        }
+
+        // Convert binary string to boolean vector
+        vector<bool> test_case;
+        for (char ch : binary_str) {
+            if (ch == '1') {
+                test_case.push_back(true);
+            } else if (ch == '0') {
+                test_case.push_back(false);
+            } else {
+                cerr << "Invalid character in binary string: " << ch << endl;
+                return 0;
+            }
+        }
+
+        // Resize the tests vector to accommodate the test_id
+        if (tests.size() <= static_cast<size_t>(test_id - 1)) {
+            tests.resize(test_id);
+        }
+
+        // Store the test case
+        tests[test_id - 1] = test_case;
+        num_testcase++;
+    }
+
+    return num_testcase;
+}
+
 // Identify ready signals in this batch, resolve dependency
 vector<int> popSignals(vector<bool> &check_todo,
                        vector<vector<int>> &dependent_signals,
