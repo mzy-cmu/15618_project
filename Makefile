@@ -26,7 +26,10 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-bench_num = s208
-# Run the program
+# Run the program with a dynamic benchmark number
 run: $(TARGET)
+	@if [ -z "$(bench_num)" ]; then \
+		echo "Error: bench_num is not set. Use 'make run bench_num=<value>'"; \
+		exit 1; \
+	fi
 	./$(TARGET) -f Benchmarks/$(bench_num).bench > Results/$(bench_num).result
