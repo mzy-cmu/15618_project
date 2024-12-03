@@ -1,6 +1,7 @@
 #ifndef CIRCUIT_H
 #define CIRCUIT_H
 
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <algorithm>

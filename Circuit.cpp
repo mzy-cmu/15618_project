@@ -1,5 +1,4 @@
 #include "Circuit.h"
-#include <iostream>
 
 // Add a signal to the circuit, return id
 int addSignal(const string name,

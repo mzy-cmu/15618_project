@@ -1,7 +1,3 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <unistd.h>
 #include "Circuit.h"
 #include "Evaluate.h"
 
@@ -134,7 +130,7 @@ int main(int argc, char *argv[]) {
                 batch_id++;
             }
 
-            // print faulty circuit output in HOPE format
+            // Print faulty circuit output in HOPE format
             cout << "  " << signals[fault_id] << " /" << values[fault_id] << ": ";
             bool diff = false;
             for (size_t i = 0; i < outputs.size(); i++) {
@@ -150,7 +146,7 @@ int main(int argc, char *argv[]) {
             }
             cout << "\n";
 
-            // print correct circuit output in HOPE format
+            // Print correct circuit output in HOPE format
             cout << "  " << signals[fault_id] << " /" << !values[fault_id] << ": ";
             for (size_t i = 0; i < output_values.size(); i++) {
                 cout << output_values[i];
