@@ -118,8 +118,7 @@ int parseTestcase(const string &testcase_filename,
                   size_t num_inputs) {
     ifstream file(testcase_filename);
     if (!file.is_open()) {
-        cerr << "Error opening file: " << testcase_filename << endl;
-        return 0;
+        throw runtime_error("Error: Could not open file " + testcase_filename);
     }
 
     string line;
@@ -130,16 +129,14 @@ int parseTestcase(const string &testcase_filename,
         // Find the colon to split the test_id and binary string
         size_t colon_pos = line.find(':');
         if (colon_pos == string::npos) {
-            cerr << "Invalid format in line: " << line << endl;
-            continue;
+            throw runtime_error("Invalid format in line: " + line);
         }
 
         // Extract test_id and binary string
         try {
             test_id = stoi(line.substr(0, colon_pos));
         } catch (const invalid_argument &) {
-            cerr << "Invalid test id in line: " << line << endl;
-            continue;
+            throw runtime_error("Invalid test id in line: " + line);
         }
 
         string binary_str = line.substr(colon_pos + 1);
@@ -147,8 +144,7 @@ int parseTestcase(const string &testcase_filename,
 
         // Validate the binary string length
         if (binary_str.size() != num_inputs) {
-            cerr << "Error: Testcase " << test_id << " has wrong number of inputs" << endl;
-            return 0;
+            throw runtime_error("Error: Testcase " + to_string(test_id) + " has wrong number of inputs");
         }
 
         // Convert binary string to boolean vector
@@ -159,8 +155,7 @@ int parseTestcase(const string &testcase_filename,
             } else if (ch == '0') {
                 test_case.push_back(false);
             } else {
-                cerr << "Invalid character in binary string: " << ch << endl;
-                return 0;
+                throw runtime_error("Invalid character in binary string: " + ch);
             }
         }
 

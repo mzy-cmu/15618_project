@@ -48,20 +48,20 @@ int main(int argc, char *argv[]) {
     vector<bool> check_todo;                   // Mark proccessed signals
 
     vector<bool> output_values;                // Correct output values
+    vector<vector<bool>> tests;                // Test cases
     vector<vector<int>> testcase_faults;       // Testcase -> [stuck-at faults that can be detected, in signal id]
 
-    // Parse circuit
+    size_t num_inputs, num_testcase;
     try {
+        // Parse circuit
         parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree);
+        // Parse testcase
+        num_inputs = inputs.size();
+        num_testcase = static_cast<size_t>(parseTestcase(testcase_filename, tests, num_inputs));
     } catch (const runtime_error &e) {
         cerr << e.what() << endl;
         return 1;
     }
-
-    // Parse testcase
-    size_t num_inputs = inputs.size();
-    vector<vector<bool>> tests;
-    size_t num_testcase = static_cast<size_t>(parseTestcase(testcase_filename, tests, num_inputs));
 
     // For each testcase
     size_t num_signals = signals.size();
