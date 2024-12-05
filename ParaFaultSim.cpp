@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
 
     vector<bool> output_values;                // Correct output values
     vector<vector<bool>> tests;                // Test cases
-    vector<vector<int>> testcase_faults;       // Testcase -> [stuck-at faults that can be detected, in signal id]
 
     size_t num_inputs, num_testcase;
     try {
@@ -65,12 +64,10 @@ int main(int argc, char *argv[]) {
         // Set testcase
         values.assign(signals.size(), false);
 
-        cout << "test    " << (test_id + 1) << ": ";
         for (size_t input_i = 0; input_i < num_inputs; input_i++) {
             values[inputs[input_i]] = tests[test_id][input_i];
-            cout << values[inputs[input_i]];
+            testcase
         }
-        cout << " ";
 
         // Evaluate good circuit
         check_todo.assign(signals.size(), false);
@@ -84,12 +81,7 @@ int main(int argc, char *argv[]) {
             
             // Evaluate gates in batch
             if (batch_id) {
-                // cout << "Batch " << batch_id << ", "<< size << " wires: ";
-                // for (size_t i = 0; i < size; i++) {
-                //     cout << signals_todo[i] << "(" << signals[signals_todo[i]] << ") ";
-                // }
-                // cout << "\n";
-
+                // TODO: add a serial version of evaluateGates
                 evaluateGates(values, gates, signals_todo, num_signals);
             }
             batch_id++;
@@ -100,62 +92,9 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         
-        output_values.clear();
+        // accumulate correct output values
         for (size_t i = 0; i < outputs.size(); i++) {
             output_values.push_back(values[outputs[i]]);
-            cout << values[outputs[i]];
-        }
-        cout << "\n";
-
-        // For each fault
-        for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
-            // Evaluate faulty circuit, same as above
-
-            // Implement input fault
-            if (fault_id < inputs.size())
-                values[fault_id] = !values[fault_id];
-
-            check_todo.assign(check_todo.size(), false);
-            dependency_degree_work = dependency_degree;
-            num_signals_accum = 0;
-            batch_id = 0;
-            while (num_signals_accum < num_signals) {
-                vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree_work);
-                size_t size = signals_todo.size();
-                num_signals_accum += size;
-
-                if (batch_id) {
-                    evaluateGates(values, gates, signals_todo, fault_id);
-                }
-                batch_id++;
-            }
-
-            // Print faulty circuit output in HOPE format
-            cout << "  " << signals[fault_id] << " /" << values[fault_id] << ": ";
-            bool diff = false;
-            for (size_t i = 0; i < outputs.size(); i++) {
-                if (values[outputs[i]] != output_values[i]) {
-                    diff = true;
-                }
-            }
-            if (diff) {
-                cout << "* ";
-            }
-            for (size_t i = 0; i < outputs.size(); i++) {
-                cout << values[outputs[i]];
-            }
-            cout << "\n";
-
-            // Print correct circuit output in HOPE format
-            cout << "  " << signals[fault_id] << " /" << !values[fault_id] << ": ";
-            for (size_t i = 0; i < output_values.size(); i++) {
-                cout << output_values[i];
-            }
-            cout << "\n";
-
-            // Revert input fault
-            if (fault_id < inputs.size())
-                values[fault_id] = !values[fault_id];
         }
     }
 

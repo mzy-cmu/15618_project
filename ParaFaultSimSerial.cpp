@@ -3,7 +3,12 @@
 
 using namespace std;
 
+#include <chrono>
+using namespace std::chrono;
+
 int main(int argc, char *argv[]) {
+    auto parseStartTime = high_resolution_clock::now();
+
     // Read command line arguments
     int opt;
     string circuit_filename, testcase_filename;
@@ -58,7 +63,10 @@ int main(int argc, char *argv[]) {
         cerr << e.what() << endl;
         return 1;
     }
+    auto parseEndTime = high_resolution_clock::now();
+    auto parseDuration = duration_cast<microseconds>(parseEndTime - parseStartTime);
 
+    auto evalStartTime = high_resolution_clock::now();
     // For each testcase
     size_t num_signals = signals.size();
     for (size_t test_id = 0; test_id < num_testcase; test_id++) {
@@ -158,6 +166,11 @@ int main(int argc, char *argv[]) {
                 values[fault_id] = !values[fault_id];
         }
     }
+    auto evalEndTime = high_resolution_clock::now();
+    auto evalDuration = duration_cast<microseconds>(evalEndTime - evalStartTime);
+
+    cout << parseDuration.count() << endl;
+    cout << evalDuration.count() << endl;
 
     return 0;
 }
