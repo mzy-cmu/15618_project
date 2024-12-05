@@ -73,8 +73,14 @@
 </style>
 </head>
 <body>
-
-<h1>Work Progress</h1>
+   
+<h1>Milestone Report</h1>
+   
+<h2>URL:</h2>
+<p><strong>Proposal: </strong><a href="#">https://mzy-cmu.github.io/ParaFaultSim/</a></p>
+<p><strong>Milestone Report: </strong><a href="milestone_report.html">https://mzy-cmu.github.io/ParaFaultSim/milestone_report</a></p>
+   
+<h2>Work Progress</h2>
 <p>We implemented the sequential version of Parallel Fault Simulation in C++. It starts by parsing the ISCAS89 circuit and assigning test cases to primary inputs. It then evaluates the circuit by partitioning it into independent gate lists that can be processed in parallel later using CUDA and MPI. For each test case, potential stuck-at faults of all signals are serially inserted into the circuit. After the faulty outputs are evaluated, they are compared with the correct output to determine if this fault can be detected.</p>
 <p>Our goals remain the same as stated in the proposal. We are confident that we are on track to complete the implementation of the two parallel versions of the algorithm and perform performance analysis. It is a matter of time commitment and debugging effort.</p>
 
@@ -134,6 +140,8 @@
         </tr>
     </tbody>
 </table>
+
+<img src="img/Serial Eval (us) vs. #signals.png" alt="Serial Eval (us) vs. #signals" width="600">
 
 <h2>Poster Session Plan</h2>
 <p>At the poster session, we plan to start with an overview of our project, including an explanation of the algorithm, how it works, its significance in the Design-for-Test framework, and the key implementation challenges. This will include visual aids to help the audience understand the problem setup. The results of our project will be presented as graphs, illustrating benchmark speedups achieved by the parallel implementations compared to the baseline serial version. Additionally, the graphs will compare the overhead and performance of the CUDA and MPI implementations, highlighting their respective strengths and identifying which approach is better suited for this use case. We hope to draw conclusions regarding the trade-offs, limitations, and potentials of this algorithm.</p>
