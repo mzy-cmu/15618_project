@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParaFaultSim - README</title>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        background-color: #f6f8fa;
+        color: #24292e;
+        line-height: 1.6;
+        margin: 0;
+        padding: 2rem;
+        max-width: 800px;
+        margin: auto;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 600;
+        color: #24292e;
+        margin-top: 1.5rem;
+    }
+
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.25em; }
+
+    p {
+        margin-bottom: 1rem;
+    }
+
+    a {
+        color: #0366d6;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        background-color: #f6f8fa;
+        color: #e83e8c;
+        padding: 0.2rem 0.4rem;
+        font-size: 85%;
+        border-radius: 3px;
+    }
+
+    pre {
+        background-color: #f6f8fa;
+        padding: 1rem;
+        overflow: auto;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    blockquote {
+        border-left: 4px solid #dfe2e5;
+        padding: 0.5rem 1rem;
+        color: #6a737d;
+        background-color: #f6f8fa;
+        margin-bottom: 1rem;
+    }
+
+    ul, ol {
+        padding-left: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    li {
+        margin-bottom: 0.5rem;
+    }
+
+    hr {
+        border: 0;
+        border-top: 1px solid #e1e4e8;
+        margin: 2rem 0;
+    }
+</style>
+</head>
+<body>
+
+<h1>ParaFaultSim</h1>
+
+<h2>URL:</h2>
+<p><a href="#">https://mzy-cmu.github.io/ParaFaultSim/</a></p>
+
+<h2>Summary</h2>
+<p>This project implements two parallel approaches for single stuck-at-fault circuit simulation within the VLSI Design-for-Test framework. It focuses on leveraging gate-level dependency and parallelism to achieve greater efficiency, building on top of traditional test case-level parallelism.</p>
+
+<h2>Background</h2>
+<p>In the field of VLSI testing, detecting and diagnosing faults in integrated circuits is critical to ensure their functionality and reliability. Among various fault models, the single stuck-at-fault model is widely used for its simplicity and effectiveness in representing many common manufacturing defects. This model assumes that a single signal line in a digital circuit is permanently stuck at a logic level 0 or 1, regardless of the intended signal behavior. Simulation of these faults is an essential step in Design-for-Test (DFT) methodologies, enabling the identification of test vectors that can detect faults and validate the fault coverage of a given test set. However, as circuits grow increasingly complex, the computational demands of fault simulation also increase exponentially, leading to the need for more efficient methods to accelerate the simulation process.</p>
+<p>Traditional approaches to fault simulation often rely on test case-level parallelism, where multiple test cases are processed concurrently. While this method improves simulation throughput, it doesn't fully exploit the inherent parallelism present in the circuit's structure, such as the dependencies between gates. By exploring gate-level parallelism, which takes advantage of the independent computation paths within the circuit, it is possible to significantly enhance the simulation performance. This project aims to address these challenges by implementing and evaluating both CUDA and MPI versions of stuck-at-fault simulation that integrate gate-level parallelism into the DFT framework.</p>
+
+<h2>Challenge</h2>
+<p>The challenges of this project include efficiently identifying and managing gate-level dependencies, partitioning workloads, and maintaining synchronization during parallel execution.</p>
+<p>Gate-level dependency analysis is a crucial first step to ensure that gates are processed only after all their input signals have been computed. This ordering depends on the circuit's topology. Secondly, the circuit's computational tasks must be distributed evenly across parallel processing units to avoid load imbalance and ensure high resource utilization. Additionally, synchronization becomes critical when the computed outputs of one group of gates must be passed as input data to the next group of gates. This step requires coordination to maintain data consistency with low overhead.</p>
+
+<h2>Resources/Platform Choice</h2>
+<p>This project first implements a serial C++ version as a baseline. Based on that, CUDA is employed to exploit GPU-based fine-grained parallelism, and MPI is used for distributed memory parallelism, enabling large-scale simulations across multiple nodes. This explores the performance trade-offs between shared and distributed memory architectures to maximize simulation efficiency under this specific use case.</p>
+  
+<h2>Goals and Deliverables</h2>
+<p>1. A serial implementation of stuck-at-fault simulation in C++ as a baseline for performance evaluation.</p>
+<p>2. Two parallel implementations CUDA and MPI.</p>
+<p>3. Performance analysis using ISCAS89 benchmark circuits of the serial and parallel versions.</p>
+<p>4. If we have time, we would like to test it under different benchmarks and implement further optimizations.</p>
+  
+<h2>Schedule</h2>
+<ul>
+    <li>Completed: Finished serial implementation, debugging CUDA implementation</li>
+    <li>12.4 - 12.7: Finish CUDA implementation, record initial speedup statistics (Ying & Felicia).</li>
+    <li>12.8 - 12.10: Finish MPI implementation, record initial speedup statistics (Ying & Felicia).</li>
+    <li>12.11 - 12.13: Optimize code and prepare for presentation (Ying & Felicia).</li>
+</ul>
+
+</body>
+</html>
