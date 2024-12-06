@@ -1,15 +1,22 @@
 # Compiler
 CXX = g++
+NVCC = nvcc
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+NVCCFLAGS = -std=c++17 -O2
 
 # Target executable
 TARGET = ParaFaultSim
 
 # Source files
-SRCS = ParaFaultSimSerial.cpp Circuit.cpp Evaluate.cpp
+CPP_SRCS = ParaFaultSim.cpp Circuit.cpp Evaluate.cpp
+CUDA_SRCS = ParaFaultSim.cu
 
 # Object files
-OBJS = $(SRCS:.cpp=.o)
+CPP_OBJS = $(CPP_SRCS:.cpp=.o)
+CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
+
+# All object files
+OBJS = $(CPP_OBJS) $(CUDA_OBJS)
 
 # Default target
 all: $(TARGET)
@@ -18,13 +25,17 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
 
-# Rule to build object files
+# Rule to build C++ object files
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Rule to build CUDA object files
+%.cu.o: %.cu
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+
 # Clean up build files
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(CPP_OBJS) $(CUDA_OBJS) $(TARGET)
 
 # Run the program with a dynamic benchmark number
 run: $(TARGET)

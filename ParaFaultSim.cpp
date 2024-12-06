@@ -3,9 +3,27 @@
 
 using namespace std;
 
-int* vec2arr(vector<vector<int>>& vec2D, int rows, int cols) {
+void ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
+
+int* int_vec2arr(vector<vector<int>>& vec2D, int size) {
     // Allocate memory for the 1D array
-    int* arr = new int[rows * cols];
+    int* arr = new int[size];
+
+    // Flatten the 2D vector into the 1D array
+    int accum = 0;
+    for (size_t i = 0; i < vec2D.size(); ++i) {
+        for (size_t j = 0; j < vec2D[i].size(); ++j) {
+            arr[accum + j] = vec2D[i][j];
+        }
+        accum += vec2D[i].size();
+    }
+
+    return arr;
+}
+
+bool* bool_vec2arr(vector<vector<bool>>& vec2D, int rows, int cols) {
+    // Allocate memory for the 1D array
+    bool* arr = new bool[rows * cols];
 
     // Flatten the 2D vector into the 1D array
     for (int i = 0; i < rows; ++i) {
@@ -82,15 +100,15 @@ int main(int argc, char *argv[]) {
     check_todo.assign(signals.size(), false);
     size_t num_signals_accum = 0;
     int depth = 0;
-    int max_signals_todo = 0;
+    size_t max_signals_todo = 0;
     int startidx = 0;
     while (num_signals_accum < num_signals) {
         vector<int> signals_todo_new = popSignals(check_todo, dependent_signals, dependency_degree);
         signals_todo.resize(depth+1);
-        signals_todo[depth].push_back(signals_todo_new);
+        signals_todo.push_back(signals_todo_new);
 
         size_t size = signals_todo_new.size();
-        signals_todo_size.resize(depth+1)
+        signals_todo_size.resize(depth+1);
         signals_todo_size.push_back(size);
 
         signals_todo_startidx.push_back(startidx);
@@ -114,10 +132,6 @@ int main(int argc, char *argv[]) {
         for (size_t input_i = 0; input_i < num_inputs; input_i++) {
             values[inputs[input_i]] = tests[test_id][input_i];
         }
-        // Implement input fault
-        if (fault_id < inputs.size()) {
-            values[fault_id] = !values[fault_id];
-        }
         // Evaluate gates
         for (int i = 1; i < depth; i++) {
             evaluateGates_serial(values, gates, signals_todo[i], num_signals);
@@ -128,12 +142,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    bool *testcases = vec2arr(tests);
-    int *signals_todo_arr = vec2arr(signals_todo);
-    bool *output_values_arr = vec2arr(output_values);
+    bool *testcases = bool_vec2arr(tests, num_testcase, num_inputs);
+    int *signals_todo_arr = int_vec2arr(signals_todo, num_signals);
+    bool *output_values_arr = bool_vec2arr(output_values, num_testcase, num_outputs);
 
     // Evaluate faulty circuits
-    ParaFaultSim(num_signals, num_inputs, gates.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values.data());
+    ParaFaultSim(num_signals, num_inputs, gates.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
 
     return 0;
 }
