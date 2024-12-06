@@ -3,6 +3,20 @@
 
 using namespace std;
 
+int* vec2arr(vector<vector<int>>& vec2D, int rows, int cols) {
+    // Allocate memory for the 1D array
+    int* arr = new int[rows * cols];
+
+    // Flatten the 2D vector into the 1D array
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            arr[i * cols + j] = vec2D[i][j];
+        }
+    }
+
+    return arr;
+}
+
 int main(int argc, char *argv[]) {
     // Read command line arguments
     int opt;
@@ -43,60 +57,83 @@ int main(int argc, char *argv[]) {
     vector<bool> values;                       // Signal id -> [parallel test case values]
     vector<bool> check_todo;                   // Mark proccessed signals
 
-    vector<bool> output_values;                // Correct output values
+    vector<vector<bool>> output_values;        // Correct output values for each testcase
     vector<vector<bool>> tests;                // Test cases
 
-    size_t num_inputs, num_testcase;
+    vector<vector<int>> signals_todo;
+    vector<int> signals_todo_size;
+    vector<int> signals_todo_startidx;
+
+    size_t num_inputs, num_outputs, num_signals, num_testcase;
     try {
         // Parse circuit
         parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree);
         // Parse testcase
         num_inputs = inputs.size();
+        num_outputs = outputs.size();
+        num_signals = signals.size();
         num_testcase = static_cast<size_t>(parseTestcase(testcase_filename, tests, num_inputs));
     } catch (const runtime_error &e) {
         cerr << e.what() << endl;
         return 1;
     }
 
-    // For each testcase
-    size_t num_signals = signals.size();
+    // Create todo lists
+    check_todo.assign(signals.size(), false);
+    size_t num_signals_accum = 0;
+    int depth = 0;
+    int max_signals_todo = 0;
+    int startidx = 0;
+    while (num_signals_accum < num_signals) {
+        vector<int> signals_todo_new = popSignals(check_todo, dependent_signals, dependency_degree);
+        signals_todo.resize(depth+1);
+        signals_todo[depth].push_back(signals_todo_new);
+
+        size_t size = signals_todo_new.size();
+        signals_todo_size.resize(depth+1)
+        signals_todo_size.push_back(size);
+
+        signals_todo_startidx.push_back(startidx);
+        startidx += size;
+
+        num_signals_accum += size;
+        depth++;
+        if (size > max_signals_todo) max_signals_todo = size;
+    }
+
+    if (num_signals_accum != num_signals) {
+        cerr << "Error: Proccessed signal count doesn't match\n";
+        return 1;
+    }
+
+    // Evaluate correct circuit
+    output_values.resize(num_testcase);
     for (size_t test_id = 0; test_id < num_testcase; test_id++) {
         // Set testcase
         values.assign(signals.size(), false);
-
         for (size_t input_i = 0; input_i < num_inputs; input_i++) {
             values[inputs[input_i]] = tests[test_id][input_i];
-            testcase
         }
-
-        // Evaluate good circuit
-        check_todo.assign(signals.size(), false);
-        vector<int> dependency_degree_work = dependency_degree;
-        size_t num_signals_accum = 0;
-        int batch_id = 0;
-        while (num_signals_accum < num_signals) {
-            vector<int> signals_todo = popSignals(check_todo, dependent_signals, dependency_degree_work);
-            size_t size = signals_todo.size();
-            num_signals_accum += size;
-            
-            // Evaluate gates in batch
-            if (batch_id) {
-                // TODO: add a serial version of evaluateGates
-                evaluateGates(values, gates, signals_todo, num_signals);
-            }
-            batch_id++;
+        // Implement input fault
+        if (fault_id < inputs.size()) {
+            values[fault_id] = !values[fault_id];
         }
-
-        if (num_signals_accum != num_signals) {
-            cerr << "Error: Proccessed signal count doesn't match\n";
-            return 1;
+        // Evaluate gates
+        for (int i = 1; i < depth; i++) {
+            evaluateGates_serial(values, gates, signals_todo[i], num_signals);
         }
-        
-        // accumulate correct output values
+        // Save correct outputs
         for (size_t i = 0; i < outputs.size(); i++) {
-            output_values.push_back(values[outputs[i]]);
+            output_values[test_id].push_back(values[outputs[i]]);
         }
     }
+
+    bool *testcases = vec2arr(tests);
+    int *signals_todo_arr = vec2arr(signals_todo);
+    bool *output_values_arr = vec2arr(output_values);
+
+    // Evaluate faulty circuits
+    ParaFaultSim(num_signals, num_inputs, gates.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values.data());
 
     return 0;
 }

@@ -47,7 +47,7 @@ bool evaluateGate(vector<bool>& values, Gate gate) {
     }
 }
 
-void evaluateGates(vector<bool>& values, vector<Gate> gates, vector<int> signals_todo, int fault_id) {
+void evaluateGates_serial(vector<bool>& values, vector<Gate> gates, vector<int> signals_todo, int fault_id) {
     for (size_t i = 0; i < signals_todo.size(); i++) {
         int gate_id = signals_todo[i];
         bool gate_value = evaluateGate(values, gates[gate_id]);

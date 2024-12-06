@@ -9,6 +9,6 @@
 
 bool evaluateGate(vector<bool>& values, Gate gate);
 
-void evaluateGates(vector<bool>& values, vector<Gate> gates, vector<int> signals_todo, int fault_id);
+void evaluateGates_serial(vector<bool>& values, vector<Gate> gates, vector<int> signals_todo, int fault_id);
 
 #endif
