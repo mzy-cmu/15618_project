@@ -5,10 +5,10 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -O2
 NVCCFLAGS = -std=c++17 -O2
 
 # Target executable
-TARGET = ParaFaultSim
+TARGET = main
 
 # Source files
-CPP_SRCS = ParaFaultSim.cpp Circuit.cpp Evaluate.cpp
+CPP_SRCS = main.cpp Circuit.cpp Evaluate.cpp
 CUDA_SRCS = ParaFaultSim.cu
 
 # Object files
@@ -30,7 +30,7 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Rule to build CUDA object files
-%.cu.o: %.cu
+%.o: %.cu
 	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
 # Clean up build files
