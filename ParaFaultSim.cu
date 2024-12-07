@@ -40,7 +40,7 @@ bool evaluateGate(bool *values, Gate gate) {
 }
 
 __global__ void
-evaluateGates_kernel(Gate *gates, int numTestcase, bool *testcase,
+evaluateGates_kernel(Gate *gates, bool *testcase,
                      int depth, int *gatePara, int *gateParaSize, int *gateParaStartIdx,
                      int numOutput, int *outputId, bool *outputVal, bool *detected) {
     int numSignal = blockDim.x;
@@ -123,7 +123,7 @@ ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *te
     // Run kernel
     double startTimeKernel = CycleTimer::currentSeconds();
     evaluateGates_kernel<<<gridDim, threadsPerBlock, numSignal>>>
-                    (Gate *device_gates, int numTestcase, bool *device_testcase, int depth, int *device_gatePara, int *device_gateParaSize, int *device_gateParaStartIdx, int numOutput, int *device_outputId, bool *device_outputVal, bool *detected);
+                    (device_gates, device_testcase, depth, device_gatePara, device_gateParaSize, device_gateParaStartIdx, numOutput, device_outputId, device_outputVal, detected);
     double endTimeKernel = CycleTimer::currentSeconds();
 
     // Copy result from GPU using cudaMemcpy
