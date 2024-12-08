@@ -3,7 +3,7 @@
 
 using namespace std;
 
-void ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
+bool *ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
 
 int* int_vec2arr(vector<vector<int>>& vec2D, int size) {
     // Allocate memory for the 1D array
@@ -147,7 +147,8 @@ int main(int argc, char *argv[]) {
     bool *output_values_arr = bool_vec2arr(output_values, num_testcase, num_outputs);
 
     // Evaluate faulty circuits
-    ParaFaultSim(num_signals, num_inputs, gates.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
+    bool *detected;
+    detected = ParaFaultSim(num_signals, num_inputs, gates.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
 
     return 0;
 }

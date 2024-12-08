@@ -4,6 +4,7 @@
 #include <cuda_runtime.h>
 #include <driver_functions.h>
 
+#include "CycleTimer.h"
 #include "Circuit.h"
 
 __device__
@@ -74,12 +75,12 @@ evaluateGates_kernel(Gate *gates, bool *testcase,
     // Save output values
     if (gateIdx == 0) {
         for (int i = 0; i < numOutput; i++) {
-            detected[testcaseIdx * numSignal + faultIdx] = value[outputId[i]] != outputVal[testcaseIdx * numOutput + i];
+            detected[testcaseIdx * numSignal + faultIdx] = values[outputId[i]] != outputVal[testcaseIdx * numOutput + i];
         }
     }
 }
 
-void
+bool *
 ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal) {
 
     Gate *device_gates; // 1D gates[signalID]
@@ -123,9 +124,10 @@ ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *te
     // Run kernel
     double startTimeKernel = CycleTimer::currentSeconds();
     evaluateGates_kernel<<<gridDim, threadsPerBlock, numSignal>>>
-                    (device_gates, device_testcase, depth, device_gatePara, device_gateParaSize, device_gateParaStartIdx, numOutput, device_outputId, device_outputVal, detected);
+                    (device_gates, device_testcase, depth, device_gatePara, device_gateParaSize, device_gateParaStartIdx, numOutput, device_outputId, device_outputVal, device_detected);
     double endTimeKernel = CycleTimer::currentSeconds();
 
+    bool *detected;
     // Copy result from GPU using cudaMemcpy
     cudaMemcpy(detected, device_detected, sizeof(int) * numTestcase * numSignal, cudaMemcpyDeviceToHost);
 
@@ -151,4 +153,6 @@ ParaFaultSim(int numSignal, int numInput, Gate *gates, int numTestcase, bool *te
     cudaFree(device_outputId);
     cudaFree(device_outputVal);
     cudaFree(device_detected);
+
+    return detected;
 }
