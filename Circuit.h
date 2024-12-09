@@ -40,8 +40,7 @@ void parseGate(const string line,
                vector<GATETYPE> &gate_type,
                int *num_gate_input,
                vector<vector<int>> &gate_input,
-               vector<int> &gate_input_size,
-               vector<int> &gate_input_startidx);
+               vector<int> &gate_input_size);
 void parseInputOutput(const string line,
                       const bool isOutput,
                       vector<int> &inputs,
@@ -52,8 +51,7 @@ void parseInputOutput(const string line,
                       vector<int> &dependency_degree,
                       vector<GATETYPE> &gate_type,
                       vector<vector<int>> &gate_input,
-                      vector<int> &gate_input_size,
-                      vector<int> &gate_input_startidx);
+                      vector<int> &gate_input_size);
 void parseISCAS89(const string filename,
                   vector<int> &inputs,
                   vector<int> &outputs,

@@ -23,8 +23,7 @@ void parseGate(const string line,
                vector<GATETYPE> &gate_type,
                int *num_gate_input,
                vector<vector<int>> &gate_input,
-               vector<int> &gate_input_size,
-               vector<int> &gate_input_startidx) {
+               vector<int> &gate_input_size) {
     string output, type, input_list;
     stringstream ss(line);
 
@@ -52,9 +51,8 @@ void parseGate(const string line,
     gate_type.resize(signals.size());
     gate_input.resize(signals.size());
     gate_input_size.resize(signals.size());
-    gate_input_startidx.resize(signals.size());
 
-    GATETYPE type_enum;
+    GATETYPE type_enum = BUFF;
     if (type == "BUFF") {
         type_enum = BUFF;
     } else if (type == "NOT") {
@@ -80,7 +78,6 @@ void parseGate(const string line,
     gate_input[output_id] = input_ids;
     gate_input_size[output_id] = input_ids.size();
     *num_gate_input += input_ids.size();
-    gate_input_startidx[output_id] = output_id == 0 ? 0 : gate_input_startidx[output_id - 1] + gate_input_size[output_id - 1];
 
     dependency_degree.resize(signals.size(), 0);
     dependency_degree[output_id] = input_ids.size();
@@ -100,8 +97,7 @@ void parseInputOutput(const string line,
                       vector<int> &dependency_degree,
                       vector<GATETYPE> &gate_type,
                       vector<vector<int>> &gate_input,
-                      vector<int> &gate_input_size,
-                      vector<int> &gate_input_startidx) {
+                      vector<int> &gate_input_size) {
     string name;
     stringstream ss(line);
     getline(ss, name, '('); // Skip "INPUT" "OUTPUT"
@@ -116,7 +112,6 @@ void parseInputOutput(const string line,
         gate_type.push_back(INPUT);
         gate_input.push_back({});
         gate_input_size.push_back(0);
-        gate_input_startidx.push_back(0);
 
         dependency_degree.push_back(0);
     }
@@ -149,13 +144,21 @@ void parseISCAS89(const string filename,
             continue;
         // Parse IO
         if (line.find("INPUT") == 0) {
-            parseInputOutput(line, false, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size, gate_input_startidx);
+            parseInputOutput(line, false, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size);
         } else if (line.find("OUTPUT") == 0) {
-            parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size, gate_input_startidx);
+            parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size);
         // Parse gates
         } else if (line.find("=") != string::npos) {
-            parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size, gate_input_startidx);
+            parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size);
         }
+    }
+
+    // Set gate_input_startidx
+    gate_input_startidx.resize(signals.size());
+    int accum = 0;
+    for (size_t i = 0; i < gate_input_size.size(); i++) {
+        gate_input_startidx[i] = accum;
+        accum += gate_input_size[i];
     }
 
     file.close();

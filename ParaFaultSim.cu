@@ -13,13 +13,13 @@ bool evaluateGate(bool *values, GATETYPE gateType, int *gateInput, int gateInput
     bool and_gate = true; // AND & NAND gate result
     bool or_gate = false; // OR & NOR gate result
     bool xor_gate = values[gateInput[gateInputStartIdx]]; // XOR & XNOR gate result
-    for (size_t i = 0; i < gateInputStartIdx; i++) {
+    for (size_t i = 0; i < gateInputSize; i++) {
         if (!values[gateInput[gateInputStartIdx + i]]) {
             and_gate = false; // if any value is zero, result is zero
         } else {
-            or_gate = true; // if any value is one, result is zero
+            or_gate = true; // if any value is one, result is one
         }
-        xor_gate = xor_gate ^ values[gateInput[gateInputStartIdx + i]];
+        if (i != 0) xor_gate = xor_gate ^ values[gateInput[gateInputStartIdx + i]];
     }
     if (gateType == BUFF) {
         return values[gateInput[gateInputStartIdx]];
@@ -43,9 +43,9 @@ bool evaluateGate(bool *values, GATETYPE gateType, int *gateInput, int gateInput
 __global__ void
 evaluateGates_kernel(GATETYPE *gateType, int *gateInput, int *gateInputSize, int *gateInputStartIdx,
                      bool *testcase, int depth, int *gatePara, int *gateParaSize, int *gateParaStartIdx,
-                     int numOutput, int *outputId, bool *outputVal, bool *detected, bool *device_value) {
-    int numSignal = blockDim.x;
-    // int numTestcase = blockDim.y;
+                     int numOutput, int *outputId, bool *outputVal, bool *detected, int *device_value) {
+    int numSignal = gridDim.x;
+    // int numTestcase = gridDim.y;
     int gateIdx = threadIdx.x; 
     int testcaseIdx = blockIdx.y;
     int faultIdx = blockIdx.x;
@@ -70,7 +70,7 @@ evaluateGates_kernel(GATETYPE *gateType, int *gateInput, int *gateInputSize, int
                     values[gateId] = !gateValue;
                 }
             }
-            device_value[gateId] = values[gateId];
+            device_value[faultIdx * numSignal + gateId] = values[gateId];
         }
         __syncthreads();
     }
@@ -98,7 +98,7 @@ ParaFaultSim(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, 
     int *device_outputId; // 1D signalID[outputID]
     bool *device_outputVal; // correct output values, 2D outputVal[testID][outputID]
     bool *device_detected; // 2D detected[testID][faultID]
-    bool *device_value;
+    int *device_value;
 
     // Allocate device memory buffers on the GPU using cudaMalloc
     cudaMalloc(&device_gateType, sizeof(GATETYPE) * numSignal);
@@ -112,7 +112,7 @@ ParaFaultSim(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, 
     cudaMalloc(&device_outputId, sizeof(int) * numOutput);
     cudaMalloc(&device_outputVal, sizeof(int) * numTestcase * numOutput);
     cudaMalloc(&device_detected, sizeof(bool) * numTestcase * numSignal);
-    cudaMalloc(&device_value, sizeof(bool) * numTestcase * numSignal);
+    cudaMalloc(&device_value, sizeof(int) * numTestcase * numSignal * numSignal);
 
     // Start timing after allocation of device memory
     double startTime = CycleTimer::currentSeconds();
@@ -131,7 +131,7 @@ ParaFaultSim(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, 
 
     // Compute number of blocks and threads per block
     const int threadsPerBlock = maxGatePara;
-    const int blocksX = 1;
+    const int blocksX = numSignal;
     const int blocksY = numTestcase;
     
     dim3 gridDim(blocksX, blocksY);
@@ -145,15 +145,18 @@ ParaFaultSim(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, 
 
     bool *detected = new bool[numTestcase * numSignal];
     // Copy result from GPU using cudaMemcpy
-    bool *value = new bool[numTestcase * numSignal];
-    cudaMemcpy(value, device_value, sizeof(bool) * numTestcase * numSignal, cudaMemcpyDeviceToHost);
-    for (size_t i = 0; i < numTestcase; i++) {
-        for (size_t j = 0; j < numSignal; j++) {
-            cout << value[i * numSignal + j];
-        }
-        cout << endl;
-    }
-    cout << endl;
+    int *value = new int[numTestcase * numSignal * numSignal];
+    cudaMemcpy(value, device_value, sizeof(int) * numTestcase * numSignal * numSignal, cudaMemcpyDeviceToHost);
+    // for (size_t i = 0; i < numTestcase; i++) {
+    //     for (size_t j = 0; j < numSignal; j++) { // different fault
+    //         for (size_t k = 0; k < numSignal; k++) { // different signal
+    //             cout << value[(i * numSignal + j) * numSignal + k] << " ";
+    //         }
+    //         cout << endl;
+    //     }
+    //     cout << endl;
+    // }
+    // cout << endl;
     cudaMemcpy(detected, device_detected, sizeof(bool) * numTestcase * numSignal, cudaMemcpyDeviceToHost);
 
     // End timing after result has been copied back into host memory
@@ -167,7 +170,7 @@ ParaFaultSim(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, 
     double overallDuration = endTime - startTime;
     printf("Overall: %.3f ms", 1000.f * overallDuration);
     double overallDurationKernel = endTimeKernel - startTimeKernel;
-    printf("Kernel: %.3f ms", 1000.f * overallDurationKernel);
+    printf("Kernel: %.3f ms\n", 1000.f * overallDurationKernel);
 
     // Free memory buffers on the GPU
     cudaFree(device_gateType);
