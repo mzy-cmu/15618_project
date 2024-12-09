@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
         num_outputs = outputs.size();
         num_signals = signals.size();
         num_testcase = static_cast<size_t>(parseTestcase(testcase_filename, tests, num_inputs));
+        num_testcase = 1;
     } catch (const runtime_error &e) {
         cerr << e.what() << endl;
         return 1;
@@ -151,13 +152,28 @@ int main(int argc, char *argv[]) {
     bool *output_values_arr = bool_vec2arr(output_values, num_testcase, num_outputs);
     int *gate_input_arr = int_vec2arr(gate_input, *num_gate_input);
 
+    for (size_t i = 0; i < signals.size(); i++) {
+        cout << i << ":" << signals[i] << " ";
+    }
+    cout << endl;
+
+    for (size_t i = 0; i < num_signals; i++) {
+        cout << i << ":" << signals_todo_arr[i] << " ";
+    }
+    cout << endl;
+
+    for (size_t i = 0; i < num_testcase * num_outputs; i++) {
+        cout << output_values_arr[i];
+    }
+    cout << endl;
+
     // Evaluate faulty circuits
     bool *detected;
     detected = ParaFaultSim(num_signals, num_inputs, gate_type.data(), *num_gate_input, gate_input_arr, gate_input_size.data(), gate_input_startidx.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
 
     for (size_t i = 0; i < num_testcase; i++) {
         for (size_t j = 0; j < num_signals; j++) {
-            cout << detected[i];
+            cout << detected[i * num_signals + j];
         }
         cout << endl;
     }
