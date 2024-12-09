@@ -17,29 +17,29 @@ bool evaluateGate(vector<bool>& values, Gate gate) {
         }
         xor_gate = xor_gate ^ values[gate.inputs[i]];
     }
-    if (gate.type == "BUFF") {
+    if (gate.type == BUFF) {
         if (gate.inputs.size() != 1) {
             cerr << "Error: BUFF gate input size not 1\n";
             return 1;
         }
         return values[gate.inputs[0]];
-    } else if (gate.type == "NOT") {
+    } else if (gate.type == NOT) {
         if (gate.inputs.size() != 1) {
             cerr << "Error: NOT gate input size not 1\n";
             return 1;
         }
         return !values[gate.inputs[0]];
-    } else if (gate.type == "AND") {
+    } else if (gate.type == AND) {
         return and_gate;
-    } else if (gate.type == "NAND") {
+    } else if (gate.type == NAND) {
         return !and_gate;
-    } else if (gate.type == "OR") {
+    } else if (gate.type == OR) {
         return or_gate;
-    } else if (gate.type == "NOR") {
+    } else if (gate.type == NOR) {
         return !or_gate;
-    } else if (gate.type == "XOR") {
+    } else if (gate.type == XOR) {
         return xor_gate;
-    } else if (gate.type == "XNOR") {
+    } else if (gate.type == XNOR) {
         return !xor_gate;
     } else {
         cerr << "Error: Invalid gate type " << gate.type << "\n";

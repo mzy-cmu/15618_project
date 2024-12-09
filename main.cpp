@@ -4,7 +4,7 @@
 using namespace std;
 
 bool *
-ParaFaultSim(int numSignal, int numInput, int *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
+ParaFaultSim(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
 
 int* int_vec2arr(vector<vector<int>>& vec2D, int size) {
     // Allocate memory for the 1D array
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     vector<string> signals;                    // Signal id -> name
     unordered_map<string, int> signal_map;     // Name -> signal id
     vector<Gate> gates;                        // Signal id -> gate type (incl INPUT), input ids
-    vector<int> gate_type;                     // CUDA gate type
+    vector<GATETYPE> gate_type;                // CUDA gate type
     vector<vector<int>> gate_input;            // CUDA gate inputs
     vector<int> gate_input_size;               // CUDA gate number of inputs
     vector<int> gate_input_startidx;           // CUDA gate input array start index
@@ -88,10 +88,10 @@ int main(int argc, char *argv[]) {
     vector<int> signals_todo_startidx;
 
     size_t num_inputs, num_outputs, num_signals, num_testcase;
-    int num_gate_input;
+    int *num_gate_input = new int[1];
     try {
         // Parse circuit
-        parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, &num_gate_input, gate_input, gate_input_size, gate_input_startidx);
+        parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size, gate_input_startidx);
         // Parse testcase
         num_inputs = inputs.size();
         num_outputs = outputs.size();
@@ -110,11 +110,9 @@ int main(int argc, char *argv[]) {
     int startidx = 0;
     while (num_signals_accum < num_signals) {
         vector<int> signals_todo_new = popSignals(check_todo, dependent_signals, dependency_degree);
-        signals_todo.resize(depth+1);
         signals_todo.push_back(signals_todo_new);
 
         size_t size = signals_todo_new.size();
-        signals_todo_size.resize(depth+1);
         signals_todo_size.push_back(size);
 
         signals_todo_startidx.push_back(startidx);
@@ -151,11 +149,18 @@ int main(int argc, char *argv[]) {
     bool *testcases = bool_vec2arr(tests, num_testcase, num_inputs);
     int *signals_todo_arr = int_vec2arr(signals_todo, num_signals);
     bool *output_values_arr = bool_vec2arr(output_values, num_testcase, num_outputs);
-    int *gate_input_arr = int_vec2arr(gate_input, num_gate_input);
+    int *gate_input_arr = int_vec2arr(gate_input, *num_gate_input);
 
     // Evaluate faulty circuits
     bool *detected;
-    detected = ParaFaultSim(num_signals, num_inputs, gate_type.data(), num_gate_input, gate_input_arr, gate_input_size.data(), gate_input_startidx.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
+    detected = ParaFaultSim(num_signals, num_inputs, gate_type.data(), *num_gate_input, gate_input_arr, gate_input_size.data(), gate_input_startidx.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
+
+    for (size_t i = 0; i < num_testcase; i++) {
+        for (size_t j = 0; j < num_signals; j++) {
+            cout << detected[i];
+        }
+        cout << endl;
+    }
 
     return 0;
 }

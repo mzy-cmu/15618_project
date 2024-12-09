@@ -20,7 +20,7 @@ void parseGate(const string line,
                vector<Gate> &gates,
                vector<vector<int>> &dependent_signals,
                vector<int> &dependency_degree,
-               vector<int> &gate_type,
+               vector<GATETYPE> &gate_type,
                int *num_gate_input,
                vector<vector<int>> &gate_input,
                vector<int> &gate_input_size,
@@ -47,29 +47,36 @@ void parseGate(const string line,
         input_ids.push_back(addSignal(input, signals, signal_map));
     }
 
-    // Update gates, dependent_signals, dependency_degree
+    // Update CUDA signals
     gates.resize(signals.size());
-    Gate gate = {type, input_ids};
+    gate_type.resize(signals.size());
+    gate_input.resize(signals.size());
+    gate_input_size.resize(signals.size());
+    gate_input_startidx.resize(signals.size());
+
+    GATETYPE type_enum;
+    if (type == "BUFF") {
+        type_enum = BUFF;
+    } else if (type == "NOT") {
+        type_enum = NOT;
+    } else if (type == "AND") {
+        type_enum = AND;
+    } else if (type == "NAND") {
+        type_enum = NAND;
+    } else if (type == "OR") {
+        type_enum = OR;
+    } else if (type == "NOR") {
+        type_enum = NOR;
+    } else if (type == "XOR") {
+        type_enum = XOR;
+    } else if (type == "XNOR") {
+        type_enum = XNOR;
+    }
+    gate_type[output_id] = type_enum;
+
+    Gate gate = {type_enum, input_ids};
     gates[output_id] = gate;
 
-    // Update CUDA signals
-    if (type == "BUFF") {
-        gate_type[output_id] = BUFF;
-    } else if (type == "NOT") {
-        gate_type[output_id] = NOT;
-    } else if (type == "AND") {
-        gate_type[output_id] = AND;
-    } else if (type == "NAND") {
-        gate_type[output_id] = NAND;
-    } else if (type == "OR") {
-        gate_type[output_id] = OR;
-    } else if (type == "NOR") {
-        gate_type[output_id] = NOR;
-    } else if (type == "XOR") {
-        gate_type[output_id] = XOR;
-    } else if (type == "XNOR") {
-        gate_type[output_id] = XNOR;
-    }
     gate_input[output_id] = input_ids;
     gate_input_size[output_id] = input_ids.size();
     *num_gate_input += input_ids.size();
@@ -90,7 +97,11 @@ void parseInputOutput(const string line,
                       vector<string> &signals,
                       unordered_map<string, int> &signal_map,
                       vector<Gate> &gates,
-                      vector<int> &dependency_degree) {
+                      vector<int> &dependency_degree,
+                      vector<GATETYPE> &gate_type,
+                      vector<vector<int>> &gate_input,
+                      vector<int> &gate_input_size,
+                      vector<int> &gate_input_startidx) {
     string name;
     stringstream ss(line);
     getline(ss, name, '('); // Skip "INPUT" "OUTPUT"
@@ -99,8 +110,14 @@ void parseInputOutput(const string line,
     int id = addSignal(name, signals, signal_map);
     if (!isOutput) {
         inputs.push_back(id);
-        Gate gate = {"INPUT", {}};
+        Gate gate = {INPUT, {}};
         gates.push_back(gate);
+
+        gate_type.push_back(INPUT);
+        gate_input.push_back({});
+        gate_input_size.push_back(0);
+        gate_input_startidx.push_back(0);
+
         dependency_degree.push_back(0);
     }
     else
@@ -116,7 +133,7 @@ void parseISCAS89(const string filename,
                   vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
                   vector<int> &dependency_degree,
-                  vector<int> &gate_type,
+                  vector<GATETYPE> &gate_type,
                   int *num_gate_input,
                   vector<vector<int>> &gate_input,
                   vector<int> &gate_input_size,
@@ -132,9 +149,9 @@ void parseISCAS89(const string filename,
             continue;
         // Parse IO
         if (line.find("INPUT") == 0) {
-            parseInputOutput(line, false, inputs, outputs, signals, signal_map, gates, dependency_degree);
+            parseInputOutput(line, false, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size, gate_input_startidx);
         } else if (line.find("OUTPUT") == 0) {
-            parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree);
+            parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size, gate_input_startidx);
         // Parse gates
         } else if (line.find("=") != string::npos) {
             parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size, gate_input_startidx);

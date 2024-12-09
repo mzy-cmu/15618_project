@@ -11,12 +11,8 @@
 
 using namespace std;
 
-struct Gate {
-    string type;                // Gate type (e.g., INPUT, AND, OR, NOT)
-    vector<int> inputs;         // Input signal id
-};
-
 enum GATETYPE {
+    INPUT,
     BUFF,
     NOT,
     AND,
@@ -25,6 +21,11 @@ enum GATETYPE {
     NOR,
     XOR,
     XNOR
+};
+
+struct Gate {
+    GATETYPE type;                // Gate type (e.g., INPUT, AND, OR, NOT)
+    vector<int> inputs;         // Input signal id
 };
 
 int addSignal(const string name,
@@ -36,7 +37,7 @@ void parseGate(const string line,
                vector<Gate> &gates,
                vector<vector<int>> &dependent_signals,
                vector<int> &dependency_degree,
-               vector<int> &gate_type,
+               vector<GATETYPE> &gate_type,
                int *num_gate_input,
                vector<vector<int>> &gate_input,
                vector<int> &gate_input_size,
@@ -48,7 +49,11 @@ void parseInputOutput(const string line,
                       vector<string> &signals,
                       unordered_map<string, int> &signal_map,
                       vector<Gate> &gates,
-                      vector<int> &dependency_degree);
+                      vector<int> &dependency_degree,
+                      vector<GATETYPE> &gate_type,
+                      vector<vector<int>> &gate_input,
+                      vector<int> &gate_input_size,
+                      vector<int> &gate_input_startidx);
 void parseISCAS89(const string filename,
                   vector<int> &inputs,
                   vector<int> &outputs,
@@ -57,7 +62,7 @@ void parseISCAS89(const string filename,
                   vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
                   vector<int> &dependency_degree,
-                  vector<int> &gate_type,
+                  vector<GATETYPE> &gate_type,
                   int *num_gate_input,
                   vector<vector<int>> &gate_input,
                   vector<int> &gate_input_size,
