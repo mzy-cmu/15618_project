@@ -1,8 +1,9 @@
 # Compiler
-CXX = g++
-NVCC = nvcc
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2
-NVCCFLAGS = -std=c++17 -O2
+CXX=g++ -m64
+CXXFLAGS=-O3 -Wall
+LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart
+NVCC=nvcc
+NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc
 
 # Target executable
 TARGET = main
@@ -23,15 +24,15 @@ all: $(TARGET)
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
 # Rule to build C++ object files
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 # Rule to build CUDA object files
 %.o: %.cu
-	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+	$(NVCC) $< $(NVCCFLAGS) -c -o $@
 
 # Clean up build files
 clean:
