@@ -16,6 +16,17 @@ struct Gate {
     vector<int> inputs;         // Input signal id
 };
 
+enum GATETYPE {
+    BUFF,
+    NOT,
+    AND,
+    NAND,
+    OR,
+    NOR,
+    XOR,
+    XNOR
+};
+
 int addSignal(const string name,
               vector<string> &signals,
               unordered_map<string, int> &signal_map);
@@ -24,7 +35,12 @@ void parseGate(const string line,
                unordered_map<string, int> &signal_map,
                vector<Gate> &gates,
                vector<vector<int>> &dependent_signals,
-               vector<int> &dependency_degree);
+               vector<int> &dependency_degree,
+               vector<int> &gate_type,
+               int *num_gate_input,
+               vector<vector<int>> &gate_input,
+               vector<int> &gate_input_size,
+               vector<int> &gate_input_startidx);
 void parseInputOutput(const string line,
                       const bool isOutput,
                       vector<int> &inputs,
@@ -40,7 +56,12 @@ void parseISCAS89(const string filename,
                   unordered_map<string, int> &signal_map,
                   vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
-                  vector<int> &dependency_degree);
+                  vector<int> &dependency_degree,
+                  vector<int> &gate_type,
+                  int *num_gate_input,
+                  vector<vector<int>> &gate_input,
+                  vector<int> &gate_input_size,
+                  vector<int> &gate_input_startidx);
 int parseTestcase(const string &testcase_filename,
                   vector<vector<bool>> &tests,
                   size_t num_inputs);

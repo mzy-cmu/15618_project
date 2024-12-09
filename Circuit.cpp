@@ -19,7 +19,12 @@ void parseGate(const string line,
                unordered_map<string, int> &signal_map,
                vector<Gate> &gates,
                vector<vector<int>> &dependent_signals,
-               vector<int> &dependency_degree) {
+               vector<int> &dependency_degree,
+               vector<int> &gate_type,
+               int *num_gate_input,
+               vector<vector<int>> &gate_input,
+               vector<int> &gate_input_size,
+               vector<int> &gate_input_startidx) {
     string output, type, input_list;
     stringstream ss(line);
 
@@ -47,11 +52,35 @@ void parseGate(const string line,
     Gate gate = {type, input_ids};
     gates[output_id] = gate;
 
+    // Update CUDA signals
+    if (type == "BUFF") {
+        gate_type[output_id] = BUFF;
+    } else if (type == "NOT") {
+        gate_type[output_id] = NOT;
+    } else if (type == "AND") {
+        gate_type[output_id] = AND;
+    } else if (type == "NAND") {
+        gate_type[output_id] = NAND;
+    } else if (type == "OR") {
+        gate_type[output_id] = OR;
+    } else if (type == "NOR") {
+        gate_type[output_id] = NOR;
+    } else if (type == "XOR") {
+        gate_type[output_id] = XOR;
+    } else if (type == "XNOR") {
+        gate_type[output_id] = XNOR;
+    }
+    gate_input[output_id] = input_ids;
+    gate_input_size[output_id] = input_ids.size();
+    *num_gate_input += input_ids.size();
+    gate_input_startidx[output_id] = output_id == 0 ? 0 : gate_input_startidx[output_id - 1] + gate_input_size[output_id - 1];
+
     dependency_degree.resize(signals.size(), 0);
     dependency_degree[output_id] = input_ids.size();
     dependent_signals.resize(signals.size());
-    for (size_t i = 0; i < input_ids.size(); i++)
+    for (size_t i = 0; i < input_ids.size(); i++) {
         dependent_signals[input_ids[i]].push_back(output_id);
+    }
 }
 
 void parseInputOutput(const string line,
@@ -86,7 +115,12 @@ void parseISCAS89(const string filename,
                   unordered_map<string, int> &signal_map,
                   vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
-                  vector<int> &dependency_degree) {
+                  vector<int> &dependency_degree,
+                  vector<int> &gate_type,
+                  int *num_gate_input,
+                  vector<vector<int>> &gate_input,
+                  vector<int> &gate_input_size,
+                  vector<int> &gate_input_startidx) {
     ifstream file(filename);
     if (!file.is_open()) {
         throw runtime_error("Error: Could not open file " + filename);
@@ -103,7 +137,7 @@ void parseISCAS89(const string filename,
             parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree);
         // Parse gates
         } else if (line.find("=") != string::npos) {
-            parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree);
+            parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size, gate_input_startidx);
         }
     }
 
