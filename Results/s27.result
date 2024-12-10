@@ -1,5 +1,7 @@
-Parsing overhead: 968 us
-Evaluate: 1463 us
+CUDA mem alloc & copy: 94.005 ms
+Kernel: 0.026 ms
+Parsing overhead: 931 us
+Evaluate: 94144 us
 1 10
 2 21
 3 29

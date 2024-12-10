@@ -7,7 +7,7 @@ bool *
 ParaFaultSim_GatePara(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
 
 bool *
-ParaFaultSim_TestcasePara(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
+ParaFaultSim_TestcasePara(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int *gatePara, int numOutput, int *outputId, bool *outputVal);
 
 int* int_vec2arr(vector<vector<int>>& vec2D, int size) {
     // Allocate memory for the 1D array
@@ -206,7 +206,14 @@ int main(int argc, char *argv[]) {
         // Evaluate faulty circuits
         detected = ParaFaultSim_GatePara(num_signals, num_inputs, gate_type.data(), *num_gate_input, gate_input_arr, gate_input_size.data(), gate_input_startidx.data(), num_testcase, testcases, depth, max_signals_todo, signals_todo_arr, signals_todo_size.data(), signals_todo_startidx.data(), num_outputs, outputs.data(), output_values_arr);
     } else if (mode == "T") { // Testcase-Level Parallel Implementation
-        // TODO:
+        // Flatten vectors to pass to CUDA    
+        bool *testcases = bool_vec2arr(tests, num_testcase, num_inputs);
+        int *signals_todo_arr = int_vec2arr(signals_todo, num_signals);
+        bool *output_values_arr = bool_vec2arr(output_values, num_testcase, num_outputs);
+        int *gate_input_arr = int_vec2arr(gate_input, *num_gate_input);
+
+        // Evaluate faulty circuits
+        detected = ParaFaultSim_TestcasePara(num_signals, num_inputs, gate_type.data(), *num_gate_input, gate_input_arr, gate_input_size.data(), gate_input_startidx.data(), num_testcase, testcases, signals_todo_arr, num_outputs, outputs.data(), output_values_arr);
     }
     auto evalEndTime = high_resolution_clock::now();
     auto evalDuration = duration_cast<microseconds>(evalEndTime - evalStartTime);
@@ -219,7 +226,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < num_testcase; i++) {
         for (size_t j = 0; j < num_signals; j++) {
             num_detected += detected[i * num_signals + j];
-            // cout << detected[i * num_signals + j];
+            // cout << detected[i * num_signals + j] << endl;
         }
         cout << i+1 << " " << num_detected << endl;
     }
