@@ -44,4 +44,4 @@ run: $(TARGET)
 		echo "Error: bench_num is not set. Use 'make run bench_num=<value>'"; \
 		exit 1; \
 	fi
-	./$(TARGET) -f Benchmarks/$(bench_num).bench -t Tests/$(bench_num).test > Results/$(bench_num).result
+	./$(TARGET) -f Benchmarks/$(bench_num).bench -t Tests/$(bench_num).test -m S > Results/$(bench_num).result
