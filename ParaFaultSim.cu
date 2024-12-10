@@ -175,38 +175,41 @@ ParaFaultSim_GatePara(int numSignal, int numInput, GATETYPE *gateType, int numGa
 }
 
 __global__ void
-evaluateGates_TestcasePara_kernel(GATETYPE *gateType, int *gateInput, int *gateInputSize, int *gateInputStartIdx,
+evaluateGates_TestcasePara_kernel(int numSignal, GATETYPE *gateType, int *gateInput, int *gateInputSize, int *gateInputStartIdx,
                      bool *testcase, int *gatePara, int numInput, int numOutput, int *outputId, bool *outputVal, bool *detected) {
-    int numSignal = blockDim.x;
-    int faultIdx = threadIdx.x;
-    int testcaseIdx = blockIdx.x;
+    int partitionIdx = blockIdx.x;
+    int faultId = blockDim.x * partitionIdx + threadIdx.x; // Global fault id within a testcase
+    int faultIdx = threadIdx.x; // Local partition fault index
+    int testcaseIdx = blockIdx.y;
 
     extern __shared__ bool values[]; // numFault * numSignal
-    for (int i = 0; i < numSignal; i++) {
-        int gateId = gatePara[i]; // signalID
-        int valueIdx = faultIdx * numSignal + gateId; 
-        // Assign testcase to input values
-        if (gateId < numInput) {
-            values[valueIdx] = testcase[testcaseIdx * numInput + gateId];
-            // Input faults
-            if (gateId == faultIdx) {
-                values[valueIdx] = !values[valueIdx];
+    if (faultId < numSignal) {
+        for (int i = 0; i < numSignal; i++) {
+            int gateId = gatePara[i]; // signalID
+            int valueIdx = faultIdx * numSignal + gateId; 
+            // Assign testcase to input values
+            if (gateId < numInput) {
+                values[valueIdx] = testcase[testcaseIdx * numInput + gateId];
+                // Input faults
+                if (gateId == faultId) {
+                    values[valueIdx] = !values[valueIdx];
+                }
+            }
+            // Evaluate gates
+            else {
+                values[valueIdx] = evaluateGate((values + faultIdx * numSignal), gateType[gateId], gateInput, gateInputSize[gateId], gateInputStartIdx[gateId]);
+                // Signal faults
+                if (gateId == faultId) {
+                    values[valueIdx] = !values[valueIdx];
+                }
             }
         }
-        // Evaluate gates
-        else {
-            values[valueIdx] = evaluateGate((values + faultIdx * numSignal), gateType[gateId], gateInput, gateInputSize[gateId], gateInputStartIdx[gateId]);
-            // Signal faults
-            if (gateId == faultIdx) {
-                values[valueIdx] = !values[valueIdx];
-            }
-        }
-    }
     
-    // Save output values
-    for (int i = 0; i < numOutput; i++) {
-        // Fault can be detected if any faulty circuit output values are different from good circuit output values
-        detected[testcaseIdx * numSignal + faultIdx] |= (values[faultIdx * numSignal + outputId[i]] != outputVal[testcaseIdx * numOutput + i]);
+        // Save output values
+        for (int i = 0; i < numOutput; i++) {
+            // Fault can be detected if any faulty circuit output values are different from good circuit output values
+            detected[testcaseIdx * numSignal + faultId] |= (values[faultIdx * numSignal + outputId[i]] != outputVal[testcaseIdx * numOutput + i]);
+        }
     }
 }
 
@@ -248,16 +251,17 @@ ParaFaultSim_TestcasePara(int numSignal, int numInput, GATETYPE *gateType, int n
     cudaMemcpy(device_outputVal, outputVal, sizeof(int) * numTestcase * numOutput, cudaMemcpyHostToDevice);
 
     // Compute number of blocks and threads per block
-    const int threadsPerBlock = numSignal;
-    const int blockPerGrid = numTestcase;
+    const int partition = 256;
+    const int threadsPerBlock = (numSignal + partition - 1) / partition;
+    dim3 gridDim (partition, numTestcase);
 
     // End timing after result has been copied back into host memory
     double endTime = CycleTimer::currentSeconds();
 
     // Run kernel
     double startTimeKernel = CycleTimer::currentSeconds();
-    evaluateGates_TestcasePara_kernel<<<blockPerGrid, threadsPerBlock, sizeof(bool)*numSignal*numSignal>>>
-                    (device_gateType, device_gateInput, device_gateInputSize, device_gateInputStartIdx,
+    evaluateGates_TestcasePara_kernel<<<gridDim, threadsPerBlock, sizeof(bool)*((numSignal+partition-1)/partition) * numSignal>>>
+                    (numSignal, device_gateType, device_gateInput, device_gateInputSize, device_gateInputStartIdx,
                      device_testcase, device_gatePara, numInput, numOutput, device_outputId, device_outputVal, device_detected);
     double endTimeKernel = CycleTimer::currentSeconds();
 
