@@ -23,18 +23,12 @@ enum GATETYPE {
     XNOR
 };
 
-struct Gate {
-    GATETYPE type;                // Gate type (e.g., INPUT, AND, OR, NOT)
-    vector<int> inputs;         // Input signal id
-};
-
 int addSignal(const string name,
               vector<string> &signals,
               unordered_map<string, int> &signal_map);
 void parseGate(const string line,
                vector<string> &signals,
                unordered_map<string, int> &signal_map,
-               vector<Gate> &gates,
                vector<vector<int>> &dependent_signals,
                vector<int> &dependency_degree,
                vector<GATETYPE> &gate_type,
@@ -47,7 +41,6 @@ void parseInputOutput(const string line,
                       vector<int> &outputs,
                       vector<string> &signals,
                       unordered_map<string, int> &signal_map,
-                      vector<Gate> &gates,
                       vector<int> &dependency_degree,
                       vector<GATETYPE> &gate_type,
                       vector<vector<int>> &gate_input,
@@ -57,7 +50,6 @@ void parseISCAS89(const string filename,
                   vector<int> &outputs,
                   vector<string> &signals,
                   unordered_map<string, int> &signal_map,
-                  vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
                   vector<int> &dependency_degree,
                   vector<GATETYPE> &gate_type,

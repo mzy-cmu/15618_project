@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include "Circuit.h"
 
-bool evaluateGate(vector<bool>& values, Gate gate);
+bool evaluateGate(vector<bool>& values, GATETYPE gate_type, vector<int>& gate_input);
 
-void evaluateGates_serial(vector<bool>& values, vector<Gate> gates, vector<int> signals_todo, int fault_id);
+void evaluateGates_serial(vector<bool>& values, vector<GATETYPE>& gate_type, vector<vector<int>>& gate_input, vector<int> signals_todo, int fault_id);
 
 #endif

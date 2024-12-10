@@ -17,7 +17,6 @@ int addSignal(const string name,
 void parseGate(const string line,
                vector<string> &signals,
                unordered_map<string, int> &signal_map,
-               vector<Gate> &gates,
                vector<vector<int>> &dependent_signals,
                vector<int> &dependency_degree,
                vector<GATETYPE> &gate_type,
@@ -47,7 +46,6 @@ void parseGate(const string line,
     }
 
     // Update CUDA signals
-    gates.resize(signals.size());
     gate_type.resize(signals.size());
     gate_input.resize(signals.size());
     gate_input_size.resize(signals.size());
@@ -71,10 +69,6 @@ void parseGate(const string line,
         type_enum = XNOR;
     }
     gate_type[output_id] = type_enum;
-
-    Gate gate = {type_enum, input_ids};
-    gates[output_id] = gate;
-
     gate_input[output_id] = input_ids;
     gate_input_size[output_id] = input_ids.size();
     *num_gate_input += input_ids.size();
@@ -93,7 +87,6 @@ void parseInputOutput(const string line,
                       vector<int> &outputs,
                       vector<string> &signals,
                       unordered_map<string, int> &signal_map,
-                      vector<Gate> &gates,
                       vector<int> &dependency_degree,
                       vector<GATETYPE> &gate_type,
                       vector<vector<int>> &gate_input,
@@ -106,8 +99,6 @@ void parseInputOutput(const string line,
     int id = addSignal(name, signals, signal_map);
     if (!isOutput) {
         inputs.push_back(id);
-        Gate gate = {INPUT, {}};
-        gates.push_back(gate);
 
         gate_type.push_back(INPUT);
         gate_input.push_back({});
@@ -125,7 +116,6 @@ void parseISCAS89(const string filename,
                   vector<int> &outputs,
                   vector<string> &signals,
                   unordered_map<string, int> &signal_map,
-                  vector<Gate> &gates,
                   vector<vector<int>> &dependent_signals,
                   vector<int> &dependency_degree,
                   vector<GATETYPE> &gate_type,
@@ -144,12 +134,12 @@ void parseISCAS89(const string filename,
             continue;
         // Parse IO
         if (line.find("INPUT") == 0) {
-            parseInputOutput(line, false, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size);
+            parseInputOutput(line, false, inputs, outputs, signals, signal_map, dependency_degree, gate_type, gate_input, gate_input_size);
         } else if (line.find("OUTPUT") == 0) {
-            parseInputOutput(line, true, inputs, outputs, signals, signal_map, gates, dependency_degree, gate_type, gate_input, gate_input_size);
+            parseInputOutput(line, true, inputs, outputs, signals, signal_map, dependency_degree, gate_type, gate_input, gate_input_size);
         // Parse gates
         } else if (line.find("=") != string::npos) {
-            parseGate(line, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size);
+            parseGate(line, signals, signal_map, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size);
         }
     }
 

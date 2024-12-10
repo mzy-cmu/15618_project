@@ -70,11 +70,10 @@ int main(int argc, char *argv[]) {
     vector<int> outputs;                       // Output signal ids
     vector<string> signals;                    // Signal id -> name
     unordered_map<string, int> signal_map;     // Name -> signal id
-    vector<Gate> gates;                        // Signal id -> gate type (incl INPUT), input ids
-    vector<GATETYPE> gate_type;                // CUDA gate type
-    vector<vector<int>> gate_input;            // CUDA gate inputs
-    vector<int> gate_input_size;               // CUDA gate number of inputs
-    vector<int> gate_input_startidx;           // CUDA gate input array start index
+    vector<GATETYPE> gate_type;                // gate type
+    vector<vector<int>> gate_input;            // gate inputs
+    vector<int> gate_input_size;               // gate number of inputs
+    vector<int> gate_input_startidx;           // gate input array start index
     vector<vector<int>> dependent_signals;     // Siganl id -> dependent output signals
     vector<int> dependency_degree;             // Signal id -> In-degree of each signal
     vector<bool> values;                       // Signal id -> [parallel test case values]
@@ -91,7 +90,7 @@ int main(int argc, char *argv[]) {
     int *num_gate_input = new int[1];
     try {
         // Parse circuit
-        parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, gates, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size, gate_input_startidx);
+        parseISCAS89(circuit_filename, inputs, outputs, signals, signal_map, dependent_signals, dependency_degree, gate_type, num_gate_input, gate_input, gate_input_size, gate_input_startidx);
         // Parse testcase
         num_inputs = inputs.size();
         num_outputs = outputs.size();
@@ -138,7 +137,7 @@ int main(int argc, char *argv[]) {
         }
         // Evaluate gates
         for (int i = 1; i < depth; i++) {
-            evaluateGates_serial(values, gates, signals_todo[i], num_signals);
+            evaluateGates_serial(values, gate_type, gate_input, signals_todo[i], num_signals);
         }
         // Save correct outputs
         for (size_t i = 0; i < outputs.size(); i++) {
@@ -150,21 +149,6 @@ int main(int argc, char *argv[]) {
     int *signals_todo_arr = int_vec2arr(signals_todo, num_signals);
     bool *output_values_arr = bool_vec2arr(output_values, num_testcase, num_outputs);
     int *gate_input_arr = int_vec2arr(gate_input, *num_gate_input);
-
-    // for (size_t i = 0; i < signals.size(); i++) {
-    //     cout << i << ":" << signals[i] << " ";
-    // }
-    // cout << endl;
-
-    // for (size_t i = 0; i < num_signals; i++) {
-    //     cout << gate_input_startidx[i] << " ";
-    // }
-    // cout << endl;
-
-    // for (size_t i = 0; i < num_testcase * num_outputs; i++) {
-    //     cout << output_values_arr[i];
-    // }
-    // cout << endl;
 
     // Evaluate faulty circuits
     bool *detected;
