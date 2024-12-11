@@ -55,29 +55,29 @@ int main(int argc, char *argv[]) {
         case 'n':
             num_thread = atoi(optarg);
         default:
-            cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
+            cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F] -n [num_threads]\n";
         }
     }
 
     // Check if arguments were set
     if (circuit_filename.empty()) {
         cerr << "Error: -f [circuit_filename] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F] -n [num_threads]\n";
         return 1;
     }
     if (testcase_filename.empty()) {
         cerr << "Error: -t [testcase_filename] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F] -n [num_threads]\n";
         return 1;
     }
     if (mode.empty() || (mode != "S" && mode != "T" && mode != "F")) {
         cerr << "Error: -m [S/T/F] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F] -n [num_threads]\n";
         return 1;
     }
-    else if (num_thread == 0) {
+    if (num_thread == 0) {
         cerr << "Error: -n [number of threads] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F] -n [num_threads]\n";
         return 1;
     }
 
@@ -233,32 +233,36 @@ int main(int argc, char *argv[]) {
     }
     else if (mode == "T") { // Testcase-Level Parallel Implementation
         detected = new bool[num_testcase * num_signals];
-        vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
+        // vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
 
         omp_set_num_threads(num_thread);
         #pragma omp parallel for
         for (size_t test_id = 0; test_id < num_testcase; test_id++) {
             // Set testcase
+            vector<bool> values(num_signals, false);
             for (size_t input_i = 0; input_i < num_inputs; input_i++) {
-                values_testcase[test_id][inputs[input_i]] = tests[test_id][input_i];
+                values[inputs[input_i]] = tests[test_id][input_i];
             }
             // For each fault
+            vector<bool> detected_fault(num_signals, false);
             for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
                 // Implement input fault
-                if (fault_id < inputs.size()) values_testcase[test_id][fault_id] = !values_testcase[test_id][fault_id];
+                if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
 
                 for (int i = 1; i < depth; i++) {
-                    evaluateGates_serial(values_testcase[test_id], gate_type, gate_input, signals_todo[i], fault_id);
+                    evaluateGates_serial(values, gate_type, gate_input, signals_todo[i], fault_id);
                 }
 
                 // Evaluate detected
-                detected[test_id * num_signals + fault_id] = false;
                 for (size_t i = 0; i < outputs.size(); i++) {
-                    detected[test_id * num_signals + fault_id] |= (values_testcase[test_id][outputs[i]] != output_values[test_id][i]);
+                    detected_fault[fault_id] = detected_fault[fault_id] | (values[outputs[i]] != output_values[test_id][i]);
                 }
 
                 // Revert input fault
-                if (fault_id < inputs.size()) values_testcase[test_id][fault_id] = !values_testcase[test_id][fault_id];
+                if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
+
+                // update global detected
+                detected[test_id * num_signals + fault_id] = detected_fault[fault_id];
             }
         }
     }
