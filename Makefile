@@ -1,15 +1,15 @@
 # Compiler
 CXX=g++ -m64
-CXXFLAGS=-O3 -Wall
-LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart
+CXXFLAGS=-O3 -Wall -fopenmp
+LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart -fopenmp
 NVCC=nvcc
 NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc
 
 # Target executable
-TARGET = main
+TARGET = mainOpenMP
 
 # Source files
-CPP_SRCS = main.cpp Circuit.cpp Evaluate.cpp
+CPP_SRCS = mainOpenMP.cpp Circuit.cpp Evaluate.cpp
 CUDA_SRCS = ParaFaultSim.cu
 
 # Object files
