@@ -201,50 +201,50 @@ int main(int argc, char *argv[]) {
         }
     } else if (mode == "F") { // Testcase-Level Parallel Implementation, flatten testcase & fault
         detected = new bool[num_testcase * num_signals];
-        // vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
-        vector<vector<vector<bool>>> values_testcase_fault(num_testcase, vector<vector<bool>>(num_signals, vector<bool>(num_signals, false)));
 
         omp_set_num_threads(num_thread);
         #pragma omp parallel for
         for (size_t test_fault_id = 0; test_fault_id < num_testcase * num_signals; test_fault_id++) {
             size_t test_id = test_fault_id / num_signals;
             size_t fault_id = test_fault_id % num_signals;
-            // Set testcase
-            for (size_t input_i = 0; input_i < num_inputs; input_i++) {
-                values_testcase_fault[test_id][fault_id][inputs[input_i]] = tests[test_id][input_i];
-            }
-            // For each fault
-            // Implement input fault
-            if (fault_id < inputs.size()) values_testcase_fault[test_id][fault_id][fault_id] = !values_testcase_fault[test_id][fault_id][fault_id];
-
-            for (int i = 1; i < depth; i++) {
-                evaluateGates_serial(values_testcase_fault[test_id][fault_id], gate_type, gate_input, signals_todo[i], fault_id);
-            }
-
-            // Evaluate detected
-            detected[test_id * num_signals + fault_id] = false;
-            for (size_t i = 0; i < outputs.size(); i++) {
-                detected[test_id * num_signals + fault_id] |= (values_testcase_fault[test_id][fault_id][outputs[i]] != output_values[test_id][i]);
-            }
-
-            // Revert input fault
-            if (fault_id < inputs.size()) values_testcase_fault[test_id][fault_id][fault_id] = !values_testcase_fault[test_id][fault_id][fault_id];
-        }
-    }
-    else if (mode == "T") { // Testcase-Level Parallel Implementation
-        detected = new bool[num_testcase * num_signals];
-        // vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
-
-        omp_set_num_threads(num_thread);
-        #pragma omp parallel for
-        for (size_t test_id = 0; test_id < num_testcase; test_id++) {
-            // Set testcase
             vector<bool> values(num_signals, false);
+            // Set testcase
             for (size_t input_i = 0; input_i < num_inputs; input_i++) {
                 values[inputs[input_i]] = tests[test_id][input_i];
             }
             // For each fault
-            vector<bool> detected_fault(num_signals, false);
+            // Implement input fault
+            if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
+
+            for (int i = 1; i < depth; i++) {
+                evaluateGates_serial(values, gate_type, gate_input, signals_todo[i], fault_id);
+            }
+
+            // Evaluate detected
+            bool detected_signal = false;
+            for (size_t i = 0; i < outputs.size(); i++) {
+                detected_signal |= (values[outputs[i]] != output_values[test_id][i]);
+            }
+
+            // Revert input fault
+            if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
+
+            // update global detected
+            detected[test_id * num_signals + fault_id] = detected_signal;
+        }
+    }
+    else if (mode == "T") { // Testcase-Level Parallel Implementation
+        detected = new bool[num_testcase * num_signals];
+
+        omp_set_num_threads(num_thread);
+        #pragma omp parallel for
+        for (size_t test_id = 0; test_id < num_testcase; test_id++) {
+            vector<bool> values(num_signals, false);
+            // Set testcase
+            for (size_t input_i = 0; input_i < num_inputs; input_i++) {
+                values[inputs[input_i]] = tests[test_id][input_i];
+            }
+            // For each fault
             for (size_t fault_id = 0; fault_id < num_signals; fault_id++) {
                 // Implement input fault
                 if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
@@ -254,15 +254,16 @@ int main(int argc, char *argv[]) {
                 }
 
                 // Evaluate detected
+                bool detected_signal = false;
                 for (size_t i = 0; i < outputs.size(); i++) {
-                    detected_fault[fault_id] = detected_fault[fault_id] | (values[outputs[i]] != output_values[test_id][i]);
+                    detected_signal |= (values[outputs[i]] != output_values[test_id][i]);
                 }
 
                 // Revert input fault
                 if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
 
                 // update global detected
-                detected[test_id * num_signals + fault_id] = detected_fault[fault_id];
+                detected[test_id * num_signals + fault_id] = detected_signal;
             }
         }
     }
