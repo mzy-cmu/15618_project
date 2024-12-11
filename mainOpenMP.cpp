@@ -4,8 +4,6 @@
 #include <omp.h>
 using namespace std::chrono;
 
-#define NUM_THREADS 8
-
 int* int_vec2arr(vector<vector<int>>& vec2D, int size) {
     // Allocate memory for the 1D array
     int* arr = new int[size];
@@ -41,8 +39,9 @@ int main(int argc, char *argv[]) {
     // ********** Command Line Parsing **********
     // Read command line arguments
     int opt;
+    int num_thread = 0;
     string circuit_filename, testcase_filename, mode;
-    while ((opt = getopt(argc, argv, "f:t:m:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:t:m:n:")) != -1) {
         switch (opt) {
         case 'f':
             circuit_filename = string(optarg);
@@ -53,6 +52,8 @@ int main(int argc, char *argv[]) {
         case 'm':
             mode = string(optarg);
             break;
+        case 'n':
+            num_thread = atoi(optarg);
         default:
             cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
         }
@@ -71,6 +72,11 @@ int main(int argc, char *argv[]) {
     }
     if (mode.empty() || (mode != "S" && mode != "T" && mode != "F")) {
         cerr << "Error: -m [S/T/F] is required.\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
+        return 1;
+    }
+    else if (num_thread == 0) {
+        cerr << "Error: -n [number of threads] is required.\n";
         cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
         return 1;
     }
@@ -198,7 +204,7 @@ int main(int argc, char *argv[]) {
         // vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
         vector<vector<vector<bool>>> values_testcase_fault(num_testcase, vector<vector<bool>>(num_signals, vector<bool>(num_signals, false)));
 
-        omp_set_num_threads(NUM_THREADS);
+        omp_set_num_threads(num_thread);
         #pragma omp parallel for
         for (size_t test_fault_id = 0; test_fault_id < num_testcase * num_signals; test_fault_id++) {
             size_t test_id = test_fault_id / num_signals;
@@ -229,7 +235,7 @@ int main(int argc, char *argv[]) {
         detected = new bool[num_testcase * num_signals];
         vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
 
-        omp_set_num_threads(NUM_THREADS);
+        omp_set_num_threads(num_thread);
         #pragma omp parallel for
         for (size_t test_id = 0; test_id < num_testcase; test_id++) {
             // Set testcase
