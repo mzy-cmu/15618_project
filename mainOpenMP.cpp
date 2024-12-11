@@ -60,24 +60,24 @@ int main(int argc, char *argv[]) {
             mode = string(optarg);
             break;
         default:
-            cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/G]\n";
+            cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
         }
     }
 
     // Check if arguments were set
     if (circuit_filename.empty()) {
         cerr << "Error: -f [circuit_filename] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/G]\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
         return 1;
     }
     if (testcase_filename.empty()) {
         cerr << "Error: -t [testcase_filename] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/G]\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
         return 1;
     }
-    if (mode.empty() || (mode != "S" && mode != "T" && mode != "G")) {
-        cerr << "Error: -m [S/T/G] is required.\n";
-        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/G]\n";
+    if (mode.empty() || (mode != "S" && mode != "T" && mode != "F")) {
+        cerr << "Error: -m [S/T/F] is required.\n";
+        cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F]\n";
         return 1;
     }
 
@@ -199,7 +199,39 @@ int main(int argc, char *argv[]) {
                 if (fault_id < inputs.size()) values[fault_id] = !values[fault_id];
             }
         }
-    } else if (mode == "T") { // Testcase-Level Parallel Implementation
+    } else if (mode == "F") { // Testcase-Level Parallel Implementation, flatten testcase & fault
+        detected = new bool[num_testcase * num_signals];
+        // vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
+        vector<vector<vector<bool>>> values_testcase_fault(num_testcase, vector<vector<bool>>(num_signals, vector<bool>(num_signals, false)));
+
+        omp_set_num_threads(NUM_THREADS);
+        #pragma omp parallel for
+        for (size_t test_fault_id = 0; test_fault_id < num_testcase * num_signals; test_fault_id++) {
+            size_t test_id = test_fault_id / num_signals;
+            size_t fault_id = test_fault_id % num_signals;
+            // Set testcase
+            for (size_t input_i = 0; input_i < num_inputs; input_i++) {
+                values_testcase_fault[test_id][fault_id][inputs[input_i]] = tests[test_id][input_i];
+            }
+            // For each fault
+            // Implement input fault
+            if (fault_id < inputs.size()) values_testcase_fault[test_id][fault_id][fault_id] = !values_testcase_fault[test_id][fault_id][fault_id];
+
+            for (int i = 1; i < depth; i++) {
+                evaluateGates_serial(values_testcase_fault[test_id][fault_id], gate_type, gate_input, signals_todo[i], fault_id);
+            }
+
+            // Evaluate detected
+            detected[test_id * num_signals + fault_id] = false;
+            for (size_t i = 0; i < outputs.size(); i++) {
+                detected[test_id * num_signals + fault_id] |= (values_testcase_fault[test_id][fault_id][outputs[i]] != output_values[test_id][i]);
+            }
+
+            // Revert input fault
+            if (fault_id < inputs.size()) values_testcase_fault[test_id][fault_id][fault_id] = !values_testcase_fault[test_id][fault_id][fault_id];
+        }
+    }
+    else if (mode == "T") { // Testcase-Level Parallel Implementation
         detected = new bool[num_testcase * num_signals];
         vector<vector<bool>> values_testcase(num_testcase, vector<bool>(num_signals, false));
 
