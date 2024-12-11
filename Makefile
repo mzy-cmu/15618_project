@@ -1,7 +1,7 @@
 # Compiler
 CXX=g++ -m64
 CXXFLAGS=-O3 -Wall -fopenmp
-LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -lcudart -fopenmp
+LDFLAGS=-L/usr/local/cuda-11.7/lib64/ -fopenmp
 NVCC=nvcc
 NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc
 
@@ -17,7 +17,7 @@ CPP_OBJS = $(CPP_SRCS:.cpp=.o)
 CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
 
 # All object files
-OBJS = $(CPP_OBJS) $(CUDA_OBJS)
+OBJS = $(CPP_OBJS)
 
 # Default target
 all: $(TARGET)
@@ -31,8 +31,8 @@ $(TARGET): $(OBJS)
 	$(CXX) $< $(CXXFLAGS) -c -o $@
 
 # Rule to build CUDA object files
-%.o: %.cu
-	$(NVCC) $< $(NVCCFLAGS) -c -o $@
+# %.o: %.cu
+# 	$(NVCC) $< $(NVCCFLAGS) -c -o $@
 
 # Clean up build files
 clean:

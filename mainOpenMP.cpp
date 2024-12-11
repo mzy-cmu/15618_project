@@ -6,12 +6,6 @@ using namespace std::chrono;
 
 #define NUM_THREADS 8
 
-bool *
-ParaFaultSim_GatePara(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int depth, int maxGatePara, int *gatePara, int *gateParaSize, int *gateParaStartIdx, int numOutput, int *outputId, bool *outputVal);
-
-bool *
-ParaFaultSim_TestcasePara(int numSignal, int numInput, GATETYPE *gateType, int numGateInput, int *gateInput, int *gateInputSize, int *gateInputStartIdx, int numTestcase, bool *testcase, int *gatePara, int numOutput, int *outputId, bool *outputVal);
-
 int* int_vec2arr(vector<vector<int>>& vec2D, int size) {
     // Allocate memory for the 1D array
     int* arr = new int[size];

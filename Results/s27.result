@@ -1,5 +1,5 @@
-Parsing overhead: 219 us
-Evaluate: 2516 us
+Parsing overhead: 943 us
+Evaluate: 571 us
 1 10
 2 21
 3 29
