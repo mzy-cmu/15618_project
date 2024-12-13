@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
             break;
         case 'n':
             num_thread = atoi(optarg);
+            break;
         default:
             cerr << "Usage: " << argv[0] << " -f [circuit_filename] -t [testcase_filename] -m [S/T/F] -n [num_threads]\n";
         }
